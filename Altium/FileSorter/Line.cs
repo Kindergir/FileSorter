@@ -18,38 +18,34 @@ namespace FileSorter
 
 		public static bool operator > (Line first, Line second)
 		{
-			if (first.Number == second.Number)
-			{
-				return string.Compare(first.Content, second.Content, StringComparison.Ordinal) > 0;
-			}
-			return first.Number > second.Number;
+			var comparingResult = string.Compare(first.Content, second.Content, StringComparison.Ordinal);
+			return comparingResult == 0
+				? first.Number > second.Number
+				: comparingResult > 0;
 		}
 
 		public static bool operator < (Line first, Line second)
 		{
-			if (first.Number == second.Number)
-			{
-				return string.Compare(first.Content, second.Content, StringComparison.Ordinal) < 0;
-			}
-			return first.Number < second.Number;
+			var comparingResult = string.Compare(first.Content, second.Content, StringComparison.Ordinal);
+			return comparingResult == 0
+				? first.Number < second.Number
+				: comparingResult < 0;
 		}
 
 		public static bool operator >= (Line first, Line second)
 		{
-			if (first.Number == second.Number)
-			{
-				return string.Compare(first.Content, second.Content, StringComparison.Ordinal) >= 0;
-			}
-			return first.Number >= second.Number;
+			var comparingResult = string.Compare(first.Content, second.Content, StringComparison.Ordinal);
+			return comparingResult == 0
+				? first.Number >= second.Number
+				: comparingResult >= 0;
 		}
 
 		public static bool operator <= (Line first, Line second)
 		{
-			if (first.Number == second.Number)
-			{
-				return string.Compare(first.Content, second.Content, StringComparison.Ordinal) <= 0;
-			}
-			return first.Number <= second.Number;
+			var comparingResult = string.Compare(first.Content, second.Content, StringComparison.Ordinal);
+			return comparingResult == 0
+				? first.Number <= second.Number
+				: comparingResult <= 0;
 		}
 	}
 }
