@@ -5,7 +5,7 @@ namespace FileSorter
 {
 	internal static class TempFilesCleaner
 	{
-		public static void CleanAllFiles(List<string> filesPaths)
+		public static void CleanAllFiles(HashSet<string> filesPaths)
 		{
 			foreach (var filesPath in filesPaths)
 			{
