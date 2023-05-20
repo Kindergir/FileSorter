@@ -9,46 +9,26 @@ namespace FileGenerator
 	{
 		private readonly Random _random = new Random();
 		private const string Letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+		private readonly List<string> words = new List<string>();
+
+		public FileGenerator()
+		{
+			for (int i = 0; i < 1000; i++)
+			{
+				words.Add(GenerateRandomContent());
+			}
+		}
 
 		public string Generate(int sizeInKilobytes)
 		{
 			var resultFileName = $"Result_generation_{_random.Next(0, int.MaxValue)}";
 			var resultFilePath = Path.Combine(Directory.GetCurrentDirectory(), resultFileName);
 
-			var repeatingData = new List<string>(100);
-
 			using var writer = new StreamWriter(resultFilePath);
 			while (true)
 			{
-				string currentLineContent = null;
-
-				var currentRepetitionFlag = _random.Next(0, 5);
-				if (currentRepetitionFlag == 5)
-				{
-					if (repeatingData.Count == 0)
-					{
-						currentLineContent = GenerateRandomContent();
-						repeatingData.Add(currentLineContent);
-					}
-					else
-					{
-						var currentRandomRepetitionIndex = _random.Next(0, repeatingData.Count - 1);
-						currentLineContent = repeatingData[currentRandomRepetitionIndex];
-					}
-				}
-				else if (repeatingData.Count < 100)
-				{
-					currentLineContent = GenerateRandomContent();
-
-					if (repeatingData.Count < 100)
-					{
-						var currentKeepingFlag = _random.Next(0, 10);
-						if (currentKeepingFlag == 10)
-						{
-							repeatingData.Add(currentLineContent);
-						}
-					}
-				}
+				var currentIndex = _random.Next(0, words.Count - 1);
+				var currentLineContent = words[currentIndex];
 
 				var currentLine = $"{_random.Next(0, 100000)}. {currentLineContent}";
 				writer.WriteLine(currentLine);
