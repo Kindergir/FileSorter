@@ -2,6 +2,8 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileSorter", "FileSorter\FileSorter.csproj", "{DD23BEF5-BD55-4E3C-ABDB-D2F750DB4FA8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FileGenerator", "FileGenerator\FileGenerator.csproj", "{7D1C7A7A-B876-4BB3-B5A1-A63D6B35004C}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -12,5 +14,9 @@ Global
 		{DD23BEF5-BD55-4E3C-ABDB-D2F750DB4FA8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DD23BEF5-BD55-4E3C-ABDB-D2F750DB4FA8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DD23BEF5-BD55-4E3C-ABDB-D2F750DB4FA8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7D1C7A7A-B876-4BB3-B5A1-A63D6B35004C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D1C7A7A-B876-4BB3-B5A1-A63D6B35004C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D1C7A7A-B876-4BB3-B5A1-A63D6B35004C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D1C7A7A-B876-4BB3-B5A1-A63D6B35004C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

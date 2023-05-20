@@ -12,6 +12,7 @@ namespace FileSorter
 
 		public static string Merge(HashSet<string> filesPaths)
 		{
+			// TODO fix output file name and path
 			var resultFileName = $"Result_of_work_{new Random().Next(0, int.MaxValue)}.txt";
 			return InternalMerge(filesPaths, filesPaths.Count).First();
 		}
