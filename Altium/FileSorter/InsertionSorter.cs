@@ -1,6 +1,6 @@
 ﻿namespace FileSorter
 {
-	public class InsertionSorter
+	public static class InsertionSorter
 	{
 		public static void Sort(Line[] input)
 		{

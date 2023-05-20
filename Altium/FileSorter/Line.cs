@@ -10,9 +10,9 @@ namespace FileSorter
 
 		public Line(string line)
 		{
-			// TODO
-			Number = 9;
-			Content = "Bla";
+			var dotPosition = line.IndexOf('.', StringComparison.Ordinal);
+			Number = int.Parse(line.AsSpan(0, dotPosition));
+			Content = line.AsSpan(dotPosition + 2).ToString();
 			OriginalValue = line;
 		}
 

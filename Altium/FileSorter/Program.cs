@@ -1,9 +1,19 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 
 namespace FileSorter
 {
+	public static class FilesMerger
+	{
+		public static string Merge(List<string> filesPaths)
+		{
+			
+			return "";
+		}
+	}
+
 	class Program
 	{
 		static void Main(string[] args)
@@ -27,12 +37,15 @@ namespace FileSorter
 			var sw = new Stopwatch();
 			sw.Start();
 
-			var separator = new FileSeparator();
-			separator.SeparateFile(fullFileName);
+			var tempFilesNames = FileSeparator.SeparateFile(fullFileName);
+			
+			
+			
+			TempFilesCleaner.CleanAllFiles(tempFilesNames);
 
 			sw.Stop();
 
-			Console.WriteLine($"Great! Program used {sw.ElapsedMilliseconds} ms.");
+			Console.WriteLine($"Great! Program used {sw.ElapsedMilliseconds} ms. Count of temporary files is {tempFilesNames.Count}.");
 		}
 
 		private static string GetFullFileName(string enteredFileName)

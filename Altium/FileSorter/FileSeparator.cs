@@ -4,13 +4,13 @@ using System.Text;
 
 namespace FileSorter
 {
-	public class FileSeparator
+	public static class FileSeparator
 	{
 		// for always using an insertion sort on batch
 		private const int MaxBatchSize = 300;
 		private const int BufferSize = 128;
 
-		public IList<string> SeparateFile(string fileNameWithPath)
+		public static List<string> SeparateFile(string fileNameWithPath)
 		{
 			using var fileStream = File.OpenRead(fileNameWithPath);
 			using var streamReader = new StreamReader(fileStream, Encoding.UTF8, false, BufferSize);
@@ -31,9 +31,10 @@ namespace FileSorter
 				if (currentBatchSize >= MaxBatchSize)
 				{
 					InsertionSorter.Sort(batch);
-					FlashTemporaryFile(batch, currentTempFileName);
 
-					tempFilesNames.Add(currentTempFileName);
+					var fullFileName = Path.Combine(Directory.GetCurrentDirectory(), currentTempFileName);
+					FlashTemporaryFile(batch, fullFileName);
+					tempFilesNames.Add(fullFileName);
 
 					++currentTempFileNumber;
 					currentTempFileName = $"temp_{currentTempFileNumber}.txt";
@@ -44,10 +45,10 @@ namespace FileSorter
 			return tempFilesNames;
 		}
 
-		private void FlashTemporaryFile(Line[] lines, string fileName)
+		private static void FlashTemporaryFile(Line[] lines, string fileName)
 		{
-			File.Create(Path.Combine(Directory.GetCurrentDirectory(), fileName), BufferSize);
-			using var writer = new StreamWriter(fileName, true);
+			//File.Create(fileName, BufferSize);
+			using var writer = new StreamWriter(fileName, true, Encoding.UTF8);
 			foreach (var line in lines)
 			{
 				// TODO encoding
