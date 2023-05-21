@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
 
 namespace FileSorter
 {
@@ -21,6 +23,8 @@ namespace FileSorter
 			var currentTempFileName = $"temp_{currentTempFileNumber}.txt";
 			var tempFilesNames = new HashSet<string>();
 
+			var batchesWriter = new ParallelBatchesWriter();
+
 			var batch = new List<Line>();
 			var previousLine = new Line();
 			while (streamReader.ReadLine() is { } line)
@@ -32,10 +36,9 @@ namespace FileSorter
 				{
 					if (previousLine > parsedLine)
 					{
-						InsertionSorter.Sort(batch);
-
 						var fullFileName = Path.Combine(Directory.GetCurrentDirectory(), currentTempFileName);
-						FlashTemporaryFile(batch, fullFileName);
+						batchesWriter.AddTask(batch, fullFileName);
+
 						tempFilesNames.Add(fullFileName);
 
 						++currentTempFileNumber;
@@ -47,18 +50,9 @@ namespace FileSorter
 				previousLine = parsedLine;
 			}
 
+			batchesWriter.SetTasksCount(tempFilesNames.Count);
+			SpinWait.SpinUntil(() => batchesWriter.AllTasksCompleted(), TimeSpan.FromMilliseconds(15));
 			return tempFilesNames;
-		}
-
-		private static void FlashTemporaryFile(List<Line> lines, string fileName)
-		{
-			using var writer = new StreamWriter(fileName, true, Encoding.UTF8);
-			foreach (var line in lines)
-			{
-				// TODO encoding
-				writer.WriteLine(line.OriginalValue);
-			}
-			writer.Flush();
 		}
 	}
 }
