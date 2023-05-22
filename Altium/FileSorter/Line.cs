@@ -8,6 +8,13 @@ namespace FileSorter
 		public string Content { get; }
 		public string OriginalValue { get; }
 
+		public Line(int number, string content, string originalValue)
+		{
+			Number = number;
+			Content = content;
+			OriginalValue = originalValue;
+		}
+
 		public Line(string line)
 		{
 			var dotPosition = line.IndexOf('.', StringComparison.Ordinal);

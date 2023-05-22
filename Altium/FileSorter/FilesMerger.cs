@@ -14,8 +14,8 @@ namespace FileSorter
 		{
 			// TODO fix output file name and path
 			var resultFileName = $"Result_of_work_{new Random().Next(0, int.MaxValue)}.txt";
-			//return RecursivePairMerge(filesPaths, filesPaths.Count).First();
-			return MergeByLine(filesPaths, resultFileName);
+			return RecursivePairMerge(filesPaths, filesPaths.Count).First();
+			//return MergeByLine(filesPaths, resultFileName);
 		}
 
 		private static string MergeByLine(HashSet<string> filesPaths, string outputFileName)
