@@ -22,9 +22,12 @@ namespace FileSorter
 			var result = RecursivePairMerge(filesPaths, filesPaths.Count).First();
 			//var result = MergeByLine(filesPaths, resultFileName);
 
+			var currentDirectory = Directory.GetCurrentDirectory();
+			File.Move(Path.Combine(currentDirectory, result), Path.Combine(currentDirectory, resultFileName));
+
 			sw.Stop();
 			Console.WriteLine($"Merging stopped, it took {sw.ElapsedMilliseconds}");
-			return result;
+			return resultFileName;
 		}
 
 		private static string MergeByLine(HashSet<string> filesPaths, string outputFileName)
