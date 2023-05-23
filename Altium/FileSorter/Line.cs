@@ -2,7 +2,7 @@
 
 namespace FileSorter
 {
-	public struct Line
+	public struct Line : IComparable<Line>, IEquatable<Line>
 	{
 		public int Number { get; }
 		public string Content { get; }
@@ -53,6 +53,41 @@ namespace FileSorter
 			return comparingResult == 0
 				? first.Number <= second.Number
 				: comparingResult <= 0;
+		}
+
+		public int CompareTo(Line other)
+		{
+			var comparingResult = string.Compare(Content, other.Content, StringComparison.Ordinal);
+			if (comparingResult != 0)
+			{
+				return comparingResult;
+			}
+
+			if (Number == other.Number)
+			{
+				return 0;
+			}
+
+			return Number > other.Number
+				? 1
+				: -1;
+		}
+
+		public bool Equals(Line other)
+		{
+			return Number == other.Number
+			       && Content == other.Content
+			       && OriginalValue == other.OriginalValue;
+		}
+
+		public override bool Equals(object obj)
+		{
+			return obj is Line other && Equals(other);
+		}
+
+		public override int GetHashCode()
+		{
+			return HashCode.Combine(Number, Content, OriginalValue);
 		}
 	}
 }

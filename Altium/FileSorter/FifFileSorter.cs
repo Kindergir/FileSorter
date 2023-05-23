@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -13,12 +12,14 @@ namespace FileSorter
 	{
 		private volatile int _finishedTasksCount;
 		private readonly long _tasksCount;
-		private readonly ConcurrentDictionary<int, (string originalLine, bool wasAtTheEnd)> _tornLines
-			= new ConcurrentDictionary<int, (string, bool)>();
+
+		private readonly ConcurrentDictionary<int, string> _tornLinesAtStart = new ConcurrentDictionary<int, string>();
+		private readonly ConcurrentDictionary<int, string> _tornLinesAtEnd = new ConcurrentDictionary<int, string>();
 
 		public FifFileSorter(long tasksCount)
 		{
 			_tasksCount = tasksCount;
+			_finishedTasksCount = 0;
 		}
 
 		public async Task SortOneFile(
@@ -28,37 +29,28 @@ namespace FileSorter
 			int startBatchOffset,
 			int endBatchOffset)
 		{
+			var lines = (await File.ReadAllLinesAsync(inputFileName));
 			var batch = new List<Line>();
-			using (var fileStream = File.OpenRead(inputFileName))
+
+			for (int i = 0; i < lines.Length; i++)
 			{
-				using (var streamReader = new StreamReader(fileStream, Encoding.UTF8, false, 128))
+				if (i == 0 && !firstFile)
 				{
-					int i = 0;
-					while (await streamReader.ReadLineAsync() is { } line)
-					{
-						if (!firstFile && i == 0)
-						{
-							_tornLines.TryAdd(startBatchOffset, (line, false)); // possible problem on failed try
-							i = 1;
-							continue;
-						}
-
-						++i;
-
-						try
-						{
-							batch.Add(line.ToLine());
-						}
-						catch
-						{
-							_tornLines.TryAdd(endBatchOffset, (line, true)); // possible problem on failed try
-						}
-					}
+					_tornLinesAtStart.TryAdd(endBatchOffset, lines.First()); // possible problem on failed try
+					continue;
 				}
+
+				if (i == lines.Length - 1 && !lastFile)
+				{
+					_tornLinesAtEnd.TryAdd(endBatchOffset, lines.Last()); // possible problem on failed try
+					continue;
+				}
+				
+				batch.Add(lines[i].ToLine());
 			}
 
+			batch.Sort();
 			RewriteTemporaryFile(batch, inputFileName);
-
 			Interlocked.Increment(ref _finishedTasksCount);
 		}
 
@@ -80,25 +72,22 @@ namespace FileSorter
 			return _tasksCount != -1 && _tasksCount == _finishedTasksCount;
 		}
 
-		public void SortLastFile(string outputFileName)
+		public void SortLastFile(string outputFileName, int batchSize)
 		{
-			var listOfFullLines = new List<string>();
-			foreach (var line in _tornLines)
+			var listOfFullLines = new List<Line>();
+			foreach (var line in _tornLinesAtStart)
 			{
-				if (!line.Value.wasAtTheEnd)
-				{
-					continue;
-				}
-
-				var half = _tornLines[line.Key + 1];
-				listOfFullLines.Add($"{line.Value.originalLine}{half.originalLine}");
+				var half = _tornLinesAtEnd[line.Key - batchSize];
+				listOfFullLines.Add($"{half}{line.Value}".ToLine());
 			}
+
+			listOfFullLines.Sort();
 
 			using var stream = File.Create(outputFileName);
 			using var writer = new StreamWriter(stream, Encoding.UTF8);
 			foreach (var line in listOfFullLines)
 			{
-				writer.WriteLine(line);
+				writer.WriteLine(line.OriginalValue);
 			}
 			writer.Flush();
 		}

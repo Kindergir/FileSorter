@@ -12,6 +12,8 @@ namespace FileSorter
 		{
 			_reader = reader;
 			_filePath = filePath;
+
+			
 			CurrentLine = _reader.ReadLine().ToLine();
 		}
 

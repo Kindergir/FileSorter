@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace FileSorter
 {
@@ -11,7 +10,7 @@ namespace FileSorter
 	{
 		public static HashSet<string> SeparateFile(string fileNameWithPath)
 		{
-			int batchLength = 1000000; // 1000 kilobytes
+			int batchLength = 10000000; // 10000 kilobytes
 			long batchesCount = 0;
 			long fileSize = 0;
 			using (var fileStream = File.OpenRead(fileNameWithPath))
@@ -19,8 +18,9 @@ namespace FileSorter
 				fileSize = fileStream.Length;
 			}
 
-			batchesCount = fileSize / batchLength;
-			if (fileSize % batchLength != 0)
+			batchesCount = fileSize > batchLength ? fileSize / batchLength : 1;
+			int lastBatchLength = (int)(fileSize % batchLength);
+			if (lastBatchLength != 0 && fileSize > batchLength)
 			{
 				batchesCount += 1;
 			}
@@ -35,8 +35,9 @@ namespace FileSorter
 			using var mmf = MemoryMappedFile.CreateFromFile(fileNameWithPath, FileMode.Open, "ImgA");
 			for (int i = 0; i < batchesCount; i++)
 			{
-				var currentBatch = new byte [batchLength];
-				mmf.CreateViewAccessor().ReadArray(currentPosition, currentBatch, 0, batchLength);
+				int currentBatchLength = i == batchesCount - 1 ? lastBatchLength : batchLength;
+				var currentBatch = new byte [currentBatchLength];
+				mmf.CreateViewAccessor().ReadArray(currentPosition, currentBatch, 0, currentBatchLength);
 
 				currentTempFileName = $"temp_{currentTempFileNumber}.txt";
 				var fullFileName = Path.Combine(Directory.GetCurrentDirectory(), currentTempFileName);
@@ -46,11 +47,11 @@ namespace FileSorter
 					fullFileName,
 					FileMode.OpenOrCreate,
 					$"bla{currentTempFileNumber}",
-					batchLength,
+					currentBatchLength,
 					MemoryMappedFileAccess.ReadWrite);
 
 				var accessor = currentTempFile.CreateViewAccessor();
-				accessor.WriteArray(0, currentBatch, 0, batchLength);
+				accessor.WriteArray(0, currentBatch, 0, currentBatchLength);
 				accessor.Dispose();
 				currentTempFile.Dispose();
 
@@ -61,16 +62,18 @@ namespace FileSorter
 					currentPosition + batchLength);
 
 				++currentTempFileNumber;
-				currentPosition += batchLength;
+				currentPosition += currentBatchLength;
 			}
 
 			SpinWait.SpinUntil(() => fifFileSorter.AllTasksCompleted(), TimeSpan.FromMilliseconds(15));
 
-			//TODO that must be returned
-			//currentTempFileName = $"temp_{currentTempFileNumber}.txt";
-			//var lastFullFileName = Path.Combine(Directory.GetCurrentDirectory(), currentTempFileName);
-			//tempFilesNames.Add(lastFullFileName);
-			//fifFileSorter.SortLastFile(lastFullFileName);
+			if (batchesCount > 1)
+			{
+				currentTempFileName = $"temp_{currentTempFileNumber}.txt";
+				var lastFullFileName = Path.Combine(Directory.GetCurrentDirectory(), currentTempFileName);
+				tempFilesNames.Add(lastFullFileName);
+				fifFileSorter.SortLastFile(lastFullFileName, batchLength);
+			}
 
 			return tempFilesNames;
 		}

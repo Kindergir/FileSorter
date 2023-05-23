@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace FileSorter
@@ -30,9 +31,16 @@ namespace FileSorter
 
 			var tempFilesNames = FileSeparator.SeparateFile(fullFileName);
 
-			var resultFileName = (FilesMerger.Merge(tempFilesNames));
-
-			TempFilesCleaner.CleanAllFiles(tempFilesNames);
+			string resultFileName;
+			if (tempFilesNames.Count > 1)
+			{
+				resultFileName = (FilesMerger.Merge(tempFilesNames));
+				TempFilesCleaner.CleanAllFiles(tempFilesNames);
+			}
+			else
+			{
+				resultFileName = tempFilesNames.First();
+			}
 
 			sw.Stop();
 

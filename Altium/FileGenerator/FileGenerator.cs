@@ -45,7 +45,7 @@ namespace FileGenerator
 
 		private string GenerateRandomContent()
 		{
-			var randomLength = _random.Next(1, 50);
+			var randomLength = _random.Next(1, 10);
 			var builder = new StringBuilder();
 			for (int i = 0; i < randomLength; ++i)
 			{

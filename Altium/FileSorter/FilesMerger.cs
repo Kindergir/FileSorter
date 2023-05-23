@@ -14,8 +14,8 @@ namespace FileSorter
 		{
 			// TODO fix output file name and path
 			var resultFileName = $"Result_of_work_{new Random().Next(0, int.MaxValue)}.txt";
-			return RecursivePairMerge(filesPaths, filesPaths.Count).First();
-			//return MergeByLine(filesPaths, resultFileName);
+			//return RecursivePairMerge(filesPaths, filesPaths.Count).First();
+			return MergeByLine(filesPaths, resultFileName);
 		}
 
 		private static string MergeByLine(HashSet<string> filesPaths, string outputFileName)
@@ -136,20 +136,14 @@ namespace FileSorter
 				}
 			}
 
-			if (!firstFileReader.EndOfStream)
+			while (!firstFileReader.EndOfStream)
 			{
-				while (!firstFileReader.EndOfStream)
-				{
-					writer.WriteLine(firstFileReader.ReadLine());
-				}
+				writer.WriteLine(firstFileReader.ReadLine());
 			}
 
-			if (!secondFileReader.EndOfStream)
+			while (!secondFileReader.EndOfStream)
 			{
-				while (!secondFileReader.EndOfStream)
-				{
-					writer.WriteLine(secondFileReader.ReadLine());
-				}
+				writer.WriteLine(secondFileReader.ReadLine());
 			}
 
 			writer.Flush();
