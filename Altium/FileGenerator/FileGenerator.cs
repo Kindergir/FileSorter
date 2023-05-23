@@ -13,7 +13,7 @@ namespace FileGenerator
 
 		public FileGenerator()
 		{
-			for (int i = 0; i < 1000; i++)
+			for (int i = 0; i < 100000; i++)
 			{
 				words.Add(GenerateRandomContent());
 			}

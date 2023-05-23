@@ -1,5 +1,7 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -22,25 +24,80 @@ namespace FileSorter
 			_finishedTasksCount = 0;
 		}
 
-		public async Task SortOneFile(
-			string inputFileName,
-			bool firstFile,
-			bool lastFile,
-			int startBatchOffset,
-			int endBatchOffset)
+		public async Task SortFiles(List<FileDataForSort> files)
 		{
-			var lines = (await File.ReadAllLinesAsync(inputFileName));
+			Console.WriteLine("Sorting files started");
+			var sw = new Stopwatch();
+			sw.Start();
+
+			var parallelismDegree = Math.Min(files.Count, 200);
+			var semaphore = new SemaphoreSlim(parallelismDegree, parallelismDegree);
+			foreach (var file in files)
+			{
+				await semaphore.WaitAsync();
+				InternalSortOneFile(file.NameWithPath, file.IsItFirstFile, file.IsItLastFile, file.InterruptionOffset, semaphore);
+			}
+
+			for (int i = 0; i < parallelismDegree; i++)
+			{
+				await semaphore.WaitAsync();
+			}
+
+			sw.Stop();
+			Console.WriteLine($"Sorting files stopped, it took {sw.ElapsedMilliseconds}");
+		}
+
+		public async Task InternalSortOneFile(
+			string inputFileName,
+			bool isFirstFile,
+			bool isLastFile,
+			int endBatchOffset,
+			SemaphoreSlim semaphore)
+		{
+			var lines = await File.ReadAllLinesAsync(inputFileName);
 			var batch = new List<Line>();
 
 			for (int i = 0; i < lines.Length; i++)
 			{
-				if (i == 0 && !firstFile)
+				if (i == 0 && !isFirstFile)
 				{
 					_tornLinesAtStart.TryAdd(endBatchOffset, lines.First()); // possible problem on failed try
 					continue;
 				}
 
-				if (i == lines.Length - 1 && !lastFile)
+				if (i == lines.Length - 1 && !isLastFile)
+				{
+					_tornLinesAtEnd.TryAdd(endBatchOffset, lines.Last()); // possible problem on failed try
+					continue;
+				}
+				
+				batch.Add(lines[i].ToLine());
+			}
+
+			batch.Sort();
+			RewriteTemporaryFile(batch, inputFileName);
+			semaphore.Release();
+			//Interlocked.Increment(ref _finishedTasksCount);
+		}
+
+		public async Task SortOneFile(
+			string inputFileName,
+			bool isFirstFile,
+			bool isLastFile,
+			int endBatchOffset)
+		{
+			var lines = await File.ReadAllLinesAsync(inputFileName);
+			var batch = new List<Line>();
+
+			for (int i = 0; i < lines.Length; i++)
+			{
+				if (i == 0 && !isFirstFile)
+				{
+					_tornLinesAtStart.TryAdd(endBatchOffset, lines.First()); // possible problem on failed try
+					continue;
+				}
+
+				if (i == lines.Length - 1 && !isLastFile)
 				{
 					_tornLinesAtEnd.TryAdd(endBatchOffset, lines.Last()); // possible problem on failed try
 					continue;
@@ -77,6 +134,11 @@ namespace FileSorter
 			var listOfFullLines = new List<Line>();
 			foreach (var line in _tornLinesAtStart)
 			{
+				if (!_tornLinesAtEnd.ContainsKey(line.Key))
+				{
+					// temporary solution
+					continue;
+				}
 				var half = _tornLinesAtEnd[line.Key - batchSize];
 				listOfFullLines.Add($"{half}{line.Value}".ToLine());
 			}

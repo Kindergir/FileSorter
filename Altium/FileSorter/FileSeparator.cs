@@ -1,14 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace FileSorter
 {
+	struct FileDataForSort
+	{
+		public FileDataForSort(bool isItFirstFile, bool isItLastFile, string nameWithPath, int interruptionOffset)
+		{
+			IsItFirstFile = isItFirstFile;
+			IsItLastFile = isItLastFile;
+			NameWithPath = nameWithPath;
+			InterruptionOffset = interruptionOffset;
+		}
+
+		public bool IsItFirstFile { get; }
+		public bool IsItLastFile { get; }
+		public string NameWithPath { get; }
+		public int InterruptionOffset { get; }
+	}
 	public static class FileSeparator
 	{
-		public static HashSet<string> SeparateFile(string fileNameWithPath)
+		public static async Task<HashSet<string>> SeparateFile(string fileNameWithPath)
 		{
 			int batchLength = 10000000; // 10000 kilobytes
 			long batchesCount = 0;
@@ -30,6 +47,11 @@ namespace FileSorter
 			var tempFilesNames = new HashSet<string>();
 
 			var fifFileSorter = new FifFileSorter(batchesCount);
+			var filesToSort = new List<FileDataForSort>();
+
+			Console.WriteLine("Separation file started");
+			var sw = new Stopwatch();
+			sw.Start();
 
 			var currentPosition = 0;
 			using var mmf = MemoryMappedFile.CreateFromFile(fileNameWithPath, FileMode.Open, "ImgA");
@@ -55,17 +77,17 @@ namespace FileSorter
 				accessor.Dispose();
 				currentTempFile.Dispose();
 
-				fifFileSorter.SortOneFile(fullFileName,
+				filesToSort.Add(new FileDataForSort(
 					i == 0,
 					i == batchesCount - 1,
-					currentPosition,
-					currentPosition + batchLength);
+					fullFileName,
+					currentPosition + batchLength));
 
 				++currentTempFileNumber;
 				currentPosition += currentBatchLength;
 			}
 
-			SpinWait.SpinUntil(() => fifFileSorter.AllTasksCompleted(), TimeSpan.FromMilliseconds(15));
+			await fifFileSorter.SortFiles(filesToSort);
 
 			if (batchesCount > 1)
 			{
@@ -74,6 +96,9 @@ namespace FileSorter
 				tempFilesNames.Add(lastFullFileName);
 				fifFileSorter.SortLastFile(lastFullFileName, batchLength);
 			}
+
+			sw.Stop();
+			Console.WriteLine($"Separation file stopped, it took {sw.ElapsedMilliseconds}");
 
 			return tempFilesNames;
 		}

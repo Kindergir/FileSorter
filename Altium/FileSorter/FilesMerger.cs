@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -12,10 +13,18 @@ namespace FileSorter
 
 		public static string Merge(HashSet<string> filesPaths)
 		{
+			Console.WriteLine("Merging started");
+			var sw = new Stopwatch();
+			sw.Start();
+
 			// TODO fix output file name and path
 			var resultFileName = $"Result_of_work_{new Random().Next(0, int.MaxValue)}.txt";
-			//return RecursivePairMerge(filesPaths, filesPaths.Count).First();
-			return MergeByLine(filesPaths, resultFileName);
+			var result = RecursivePairMerge(filesPaths, filesPaths.Count).First();
+			//var result = MergeByLine(filesPaths, resultFileName);
+
+			sw.Stop();
+			Console.WriteLine($"Merging stopped, it took {sw.ElapsedMilliseconds}");
+			return result;
 		}
 
 		private static string MergeByLine(HashSet<string> filesPaths, string outputFileName)

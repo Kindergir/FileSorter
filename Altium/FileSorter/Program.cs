@@ -29,7 +29,7 @@ namespace FileSorter
 			var sw = new Stopwatch();
 			sw.Start();
 
-			var tempFilesNames = FileSeparator.SeparateFile(fullFileName);
+			var tempFilesNames = FileSeparator.SeparateFile(fullFileName).GetAwaiter().GetResult();
 
 			string resultFileName;
 			if (tempFilesNames.Count > 1)
