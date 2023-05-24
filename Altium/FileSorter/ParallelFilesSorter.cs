@@ -17,46 +17,6 @@ namespace FileSorter
 		private readonly ConcurrentDictionary<int, string> _tornLinesAtStart = new ConcurrentDictionary<int, string>();
 		private readonly ConcurrentDictionary<int, string> _tornLinesAtEnd = new ConcurrentDictionary<int, string>();
 
-		private volatile int _finishedTasksCount;
-		private readonly long _tasksCount;
-
-		public ParallelFilesSorter(long tasksCount)
-		{
-			_tasksCount = tasksCount;
-			_finishedTasksCount = 0;
-		}
-
-		public async Task SortOneFile(
-			string inputFileName,
-			bool isFirstFile,
-			bool isLastFile,
-			int endBatchOffset)
-		{
-			var lines = await File.ReadAllLinesAsync(inputFileName);
-			var batch = new List<Line>();
-
-			for (int i = 0; i < lines.Length; i++)
-			{
-				if (i == 0 && !isFirstFile)
-				{
-					_tornLinesAtStart.TryAdd(endBatchOffset, lines.First()); // possible problem on failed try
-					continue;
-				}
-
-				if (i == lines.Length - 1 && !isLastFile)
-				{
-					_tornLinesAtEnd.TryAdd(endBatchOffset, lines.Last()); // possible problem on failed try
-					continue;
-				}
-				
-				batch.Add(lines[i].ToLine());
-			}
-
-			batch.Sort();
-			RewriteTemporaryFile(batch, inputFileName);
-			Interlocked.Increment(ref _finishedTasksCount);
-		}
-
 		public async Task SortFiles(List<FileDataForSort> files)
 		{
 			Console.WriteLine("Sorting files started");
@@ -78,11 +38,6 @@ namespace FileSorter
 
 			sw.Stop();
 			Console.WriteLine($"Sorting files stopped, it took {sw.ElapsedMilliseconds}");
-		}
-
-		public bool AllTasksCompleted()
-		{
-			return _tasksCount != -1 && _tasksCount == _finishedTasksCount;
 		}
 
 		public async Task InternalSortOneFile(
