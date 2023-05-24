@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
+using System.Threading;
 using System.Threading.Tasks;
 using FileSorter.Models;
 
@@ -31,8 +32,8 @@ namespace FileSorter
 			string currentTempFileName;
 			var tempFilesNames = new HashSet<string>();
 
-			var filesSorter = new ParallelFilesSorter();
-			var filesToSort = new List<FileDataForSort>();
+			var filesSorter = new ParallelFilesSorter(batchesCount);
+			//var filesToSort = new List<FileDataForSort>();
 
 			Console.WriteLine("Separation file started");
 			var sw = new Stopwatch();
@@ -62,17 +63,18 @@ namespace FileSorter
 				accessor.Dispose();
 				currentTempFile.Dispose();
 
-				filesToSort.Add(new FileDataForSort(
-					i == 0,
-					i == batchesCount - 1,
-					fullFileName,
-					currentPosition + batchLength));
+				filesSorter.SortOneFile(fullFileName, i == 0, i == batchesCount -1, currentPosition + batchLength);
+				// filesToSort.Add(new FileDataForSort(
+				// 	i == 0,
+				// 	i == batchesCount - 1,
+				// 	fullFileName,
+				// 	currentPosition + batchLength));
 
 				++currentTempFileNumber;
 				currentPosition += currentBatchLength;
 			}
 
-			await filesSorter.SortFiles(filesToSort);
+			//await filesSorter.SortFiles(filesToSort);
 
 			if (batchesCount > 1)
 			{
@@ -82,6 +84,7 @@ namespace FileSorter
 				filesSorter.SortLastFile(lastFullFileName, batchLength);
 			}
 
+			SpinWait.SpinUntil(() => filesSorter.AllTasksCompleted(), TimeSpan.FromMilliseconds(15));
 			sw.Stop();
 			Console.WriteLine($"Separation file stopped, it took {sw.ElapsedMilliseconds}");
 
