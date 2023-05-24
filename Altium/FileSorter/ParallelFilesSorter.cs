@@ -23,7 +23,7 @@ namespace FileSorter
 			var sw = new Stopwatch();
 			sw.Start();
 
-			var parallelismDegree = Math.Min(files.Count, 200);
+			var parallelismDegree = Math.Min(files.Count, Environment.ProcessorCount);
 			var semaphore = new SemaphoreSlim(parallelismDegree, parallelismDegree);
 			foreach (var file in files)
 			{
@@ -75,11 +75,11 @@ namespace FileSorter
 		private static void RewriteTemporaryFile(List<Line> lines, string fileName)
 		{
 			File.Delete(fileName);
+
 			using var stream = File.Create(fileName);
 			using var writer = new StreamWriter(stream, Encoding.UTF8);
 			foreach (var line in lines)
 			{
-				// TODO encoding
 				writer.WriteLine(line.OriginalValue);
 			}
 			writer.Flush();
