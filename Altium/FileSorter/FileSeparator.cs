@@ -39,11 +39,11 @@ namespace FileSorter
 			sw.Start();
 
 			var currentPosition = 0;
+			var currentBatch = new byte [batchLength];
 			using var mmf = MemoryMappedFile.CreateFromFile(fileNameWithPath, FileMode.Open, "ImgA");
 			for (int i = 0; i < batchesCount; i++)
 			{
 				int currentBatchLength = i == batchesCount - 1 ? lastBatchLength : batchLength;
-				var currentBatch = new byte [currentBatchLength];
 				mmf.CreateViewAccessor().ReadArray(currentPosition, currentBatch, 0, currentBatchLength);
 
 				currentTempFileName = $"temp_{currentTempFileNumber}.txt";
