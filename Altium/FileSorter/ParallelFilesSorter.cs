@@ -17,18 +17,18 @@ namespace FileSorter
 		private readonly ConcurrentDictionary<int, string> _tornLinesAtStart = new ConcurrentDictionary<int, string>();
 		private readonly ConcurrentDictionary<int, string> _tornLinesAtEnd = new ConcurrentDictionary<int, string>();
 
-		public async Task SortFiles(List<FileDataForSort> files)
+		public async Task SortFiles(List<BatchDataForSort> files, string inputFileNameWithPath)
 		{
 			Console.WriteLine("Sorting files started");
 			var sw = new Stopwatch();
 			sw.Start();
 
-			var parallelismDegree = Math.Min(files.Count, Environment.ProcessorCount);
+			var parallelismDegree = Math.Min(files.Count, Environment.ProcessorCount * 5);
 			var semaphore = new SemaphoreSlim(parallelismDegree, parallelismDegree);
 			foreach (var file in files)
 			{
 				await semaphore.WaitAsync();
-				InternalSortOneFile(file.NameWithPath, file.IsItFirstFile, file.IsItLastFile, file.InterruptionOffset, semaphore);
+				InternalSortOneFile(file, inputFileNameWithPath, semaphore);
 			}
 
 			for (int i = 0; i < parallelismDegree; i++)
@@ -41,40 +41,50 @@ namespace FileSorter
 		}
 
 		public async Task InternalSortOneFile(
-			string inputFileName,
-			bool isFirstFile,
-			bool isLastFile,
-			int endBatchOffset,
+			BatchDataForSort batchDataForSort,
+			string inputFileNameWithPath,
 			SemaphoreSlim semaphore)
 		{
-			var lines = await File.ReadAllLinesAsync(inputFileName);
+			var currentLine = 0;
+			//var batchSize = batchDataForSort.InterruptionOffset - batchDataForSort.StartOffset;
 			var batch = new List<Line>();
-
-			for (int i = 0; i < lines.Length; i++)
+			using (var fileReader = File.OpenRead(inputFileNameWithPath))
 			{
-				if (i == 0 && !isFirstFile)
+				fileReader.Seek(batchDataForSort.StartOffset, SeekOrigin.Begin);
+				using (var reader = new StreamReader(fileReader))
 				{
-					_tornLinesAtStart.TryAdd(endBatchOffset, lines.First()); // possible problem on failed try
-					continue;
-				}
+					while (!reader.EndOfStream && fileReader.Position < batchDataForSort.InterruptionOffset)
+					{
+						var line = reader.ReadLine();
 
-				if (i == lines.Length - 1 && !isLastFile)
-				{
-					_tornLinesAtEnd.TryAdd(endBatchOffset, lines.Last()); // possible problem on failed try
-					continue;
+						if (currentLine == 0 && !batchDataForSort.IsItFirstFile)
+						{
+							_tornLinesAtStart.TryAdd(batchDataForSort.InterruptionOffset, line); // possible problem on failed try
+                            currentLine++;
+							continue;
+						}
+
+						if (fileReader.Position >= batchDataForSort.InterruptionOffset && !batchDataForSort.IsItLastFile)
+						{
+							_tornLinesAtEnd.TryAdd(batchDataForSort.InterruptionOffset, line); // possible problem on failed try
+							currentLine++;
+							continue;
+						}
+
+						batch.Add(line.ToLine());
+						currentLine++;
+					}
 				}
-				
-				batch.Add(lines[i].ToLine());
 			}
 
 			batch.Sort();
-			RewriteTemporaryFile(batch, inputFileName);
+			RewriteTemporaryFile(batch, batchDataForSort.NameWithPath);
 			semaphore.Release();
 		}
 
 		private static void RewriteTemporaryFile(List<Line> lines, string fileName)
 		{
-			File.Delete(fileName);
+			//File.Delete(fileName);
 
 			using var stream = File.Create(fileName);
 			using var writer = new StreamWriter(stream, Encoding.UTF8);
@@ -90,7 +100,7 @@ namespace FileSorter
 			var listOfFullLines = new List<Line>();
 			foreach (var line in _tornLinesAtStart)
 			{
-				if (!_tornLinesAtEnd.ContainsKey(line.Key))
+				if (!_tornLinesAtEnd.ContainsKey(line.Key - batchSize))
 				{
 					// temporary solution
 					continue;

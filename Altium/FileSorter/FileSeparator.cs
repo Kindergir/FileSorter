@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.IO.MemoryMappedFiles;
 using System.Threading.Tasks;
 using FileSorter.Models;
 
@@ -12,7 +11,7 @@ namespace FileSorter
 	{
 		public static async Task<HashSet<string>> SeparateFile(string fileNameWithPath)
 		{
-			int batchLength = 10000000; // 10000 kilobytes
+			int batchLength = 1000000; // 1000 kilobytes
 			long batchesCount = 0;
 			long fileSize = 0;
 			using (var fileStream = File.OpenRead(fileNameWithPath))
@@ -32,47 +31,32 @@ namespace FileSorter
 			var tempFilesNames = new HashSet<string>();
 
 			var filesSorter = new ParallelFilesSorter();
-			var filesToSort = new List<FileDataForSort>();
+			var filePertsToSort = new List<BatchDataForSort>();
 
 			Console.WriteLine("Separation file started");
 			var sw = new Stopwatch();
 			sw.Start();
 
 			var currentPosition = 0;
-			var currentBatch = new byte [batchLength];
-			using var mmf = MemoryMappedFile.CreateFromFile(fileNameWithPath, FileMode.Open, "ImgA");
 			for (int i = 0; i < batchesCount; i++)
 			{
 				int currentBatchLength = i == batchesCount - 1 ? lastBatchLength : batchLength;
-				mmf.CreateViewAccessor().ReadArray(currentPosition, currentBatch, 0, currentBatchLength);
-
 				currentTempFileName = $"temp_{currentTempFileNumber}.txt";
 				var fullFileName = Path.Combine(Directory.GetCurrentDirectory(), currentTempFileName);
 				tempFilesNames.Add(fullFileName);
 
-				var currentTempFile = MemoryMappedFile.CreateFromFile(
-					fullFileName,
-					FileMode.OpenOrCreate,
-					$"bla{currentTempFileNumber}",
-					currentBatchLength,
-					MemoryMappedFileAccess.ReadWrite);
-
-				var accessor = currentTempFile.CreateViewAccessor();
-				accessor.WriteArray(0, currentBatch, 0, currentBatchLength);
-				accessor.Dispose();
-				currentTempFile.Dispose();
-
-				filesToSort.Add(new FileDataForSort(
+				filePertsToSort.Add(new BatchDataForSort(
 					i == 0,
 					i == batchesCount - 1,
 					fullFileName,
+					currentPosition,
 					currentPosition + batchLength));
 
 				++currentTempFileNumber;
 				currentPosition += currentBatchLength;
 			}
 
-			await filesSorter.SortFiles(filesToSort);
+			await filesSorter.SortFiles(filePertsToSort, fileNameWithPath);
 
 			if (batchesCount > 1)
 			{

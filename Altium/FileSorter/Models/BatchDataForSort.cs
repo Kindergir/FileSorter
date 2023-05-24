@@ -1,8 +1,8 @@
 ﻿namespace FileSorter.Models
 {
-	internal struct FileDataForSort
+	internal struct BatchDataForSort
 	{
-		public FileDataForSort(bool isItFirstFile, bool isItLastFile, string nameWithPath, int startOffset, int interruptionOffset)
+		public BatchDataForSort(bool isItFirstFile, bool isItLastFile, string nameWithPath, int startOffset, int interruptionOffset)
 		{
 			IsItFirstFile = isItFirstFile;
 			IsItLastFile = isItLastFile;

@@ -50,7 +50,9 @@ namespace FileSorter
 			int currentFileNumber = 0;
 			string previousFileName = "";
 
-			var parallelismDegree = filesPaths.Count > Environment.ProcessorCount ? Environment.ProcessorCount : 1;
+			var parallelismDegree = filesPaths.Count > Environment.ProcessorCount * 5
+				? Environment.ProcessorCount * 5
+				: filesPaths.Count;
 			var semaphore = new SemaphoreSlim(parallelismDegree, parallelismDegree);
 
 			var filesToMerge = new List<(string first, string second)>();
