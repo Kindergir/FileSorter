@@ -3,26 +3,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
-using System.Threading;
 using System.Threading.Tasks;
+using FileSorter.Models;
 
 namespace FileSorter
 {
-	struct FileDataForSort
-	{
-		public FileDataForSort(bool isItFirstFile, bool isItLastFile, string nameWithPath, int interruptionOffset)
-		{
-			IsItFirstFile = isItFirstFile;
-			IsItLastFile = isItLastFile;
-			NameWithPath = nameWithPath;
-			InterruptionOffset = interruptionOffset;
-		}
-
-		public bool IsItFirstFile { get; }
-		public bool IsItLastFile { get; }
-		public string NameWithPath { get; }
-		public int InterruptionOffset { get; }
-	}
 	public static class FileSeparator
 	{
 		public static async Task<HashSet<string>> SeparateFile(string fileNameWithPath)
@@ -46,7 +31,7 @@ namespace FileSorter
 			string currentTempFileName;
 			var tempFilesNames = new HashSet<string>();
 
-			var fifFileSorter = new FifFileSorter(batchesCount);
+			var filesSorter = new ParallelFilesSorter();
 			var filesToSort = new List<FileDataForSort>();
 
 			Console.WriteLine("Separation file started");
@@ -87,14 +72,14 @@ namespace FileSorter
 				currentPosition += currentBatchLength;
 			}
 
-			await fifFileSorter.SortFiles(filesToSort);
+			await filesSorter.SortFiles(filesToSort);
 
 			if (batchesCount > 1)
 			{
 				currentTempFileName = $"temp_{currentTempFileNumber}.txt";
 				var lastFullFileName = Path.Combine(Directory.GetCurrentDirectory(), currentTempFileName);
 				tempFilesNames.Add(lastFullFileName);
-				fifFileSorter.SortLastFile(lastFullFileName, batchLength);
+				filesSorter.SortLastFile(lastFullFileName, batchLength);
 			}
 
 			sw.Stop();

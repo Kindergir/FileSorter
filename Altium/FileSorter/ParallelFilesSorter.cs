@@ -7,22 +7,15 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using FileSorter.Mappers;
+using FileSorter.Models;
 
 namespace FileSorter
 {
-	internal class FifFileSorter
+	internal class ParallelFilesSorter
 	{
-		private volatile int _finishedTasksCount;
-		private readonly long _tasksCount;
-
 		private readonly ConcurrentDictionary<int, string> _tornLinesAtStart = new ConcurrentDictionary<int, string>();
 		private readonly ConcurrentDictionary<int, string> _tornLinesAtEnd = new ConcurrentDictionary<int, string>();
-
-		public FifFileSorter(long tasksCount)
-		{
-			_tasksCount = tasksCount;
-			_finishedTasksCount = 0;
-		}
 
 		public async Task SortFiles(List<FileDataForSort> files)
 		{
@@ -77,38 +70,6 @@ namespace FileSorter
 			batch.Sort();
 			RewriteTemporaryFile(batch, inputFileName);
 			semaphore.Release();
-			//Interlocked.Increment(ref _finishedTasksCount);
-		}
-
-		public async Task SortOneFile(
-			string inputFileName,
-			bool isFirstFile,
-			bool isLastFile,
-			int endBatchOffset)
-		{
-			var lines = await File.ReadAllLinesAsync(inputFileName);
-			var batch = new List<Line>();
-
-			for (int i = 0; i < lines.Length; i++)
-			{
-				if (i == 0 && !isFirstFile)
-				{
-					_tornLinesAtStart.TryAdd(endBatchOffset, lines.First()); // possible problem on failed try
-					continue;
-				}
-
-				if (i == lines.Length - 1 && !isLastFile)
-				{
-					_tornLinesAtEnd.TryAdd(endBatchOffset, lines.Last()); // possible problem on failed try
-					continue;
-				}
-				
-				batch.Add(lines[i].ToLine());
-			}
-
-			batch.Sort();
-			RewriteTemporaryFile(batch, inputFileName);
-			Interlocked.Increment(ref _finishedTasksCount);
 		}
 
 		private static void RewriteTemporaryFile(List<Line> lines, string fileName)
@@ -122,11 +83,6 @@ namespace FileSorter
 				writer.WriteLine(line.OriginalValue);
 			}
 			writer.Flush();
-		}
-
-		public bool AllTasksCompleted()
-		{
-			return _tasksCount != -1 && _tasksCount == _finishedTasksCount;
 		}
 
 		public void SortLastFile(string outputFileName, int batchSize)

@@ -1,7 +1,8 @@
 ﻿using System;
 using System.IO;
+using FileSorter.Mappers;
 
-namespace FileSorter
+namespace FileSorter.Models
 {
 	internal class LineSelector : IDisposable
 	{

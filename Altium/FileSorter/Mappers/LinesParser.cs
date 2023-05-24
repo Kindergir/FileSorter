@@ -1,4 +1,6 @@
-﻿namespace FileSorter
+﻿using FileSorter.Models;
+
+namespace FileSorter.Mappers
 {
 	public static class LinesParser
 	{

@@ -34,7 +34,7 @@ namespace FileSorter
 			string resultFileName;
 			if (tempFilesNames.Count > 1)
 			{
-				resultFileName = (FilesMerger.Merge(tempFilesNames));
+				resultFileName = (FilesMerger.Merge(tempFilesNames)).GetAwaiter().GetResult();
 				TempFilesCleaner.CleanAllFiles(tempFilesNames);
 			}
 			else

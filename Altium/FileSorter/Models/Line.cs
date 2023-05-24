@@ -1,8 +1,8 @@
 ﻿using System;
 
-namespace FileSorter
+namespace FileSorter.Models
 {
-	public struct Line : IComparable<Line>, IEquatable<Line>
+	public readonly struct Line : IComparable<Line>, IEquatable<Line>
 	{
 		public int Number { get; }
 		public string Content { get; }
