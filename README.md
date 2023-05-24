@@ -6,14 +6,14 @@ This solution contains 2 programs: file generator and file sorter.
 
 ## How to use the generator
 
-Build and run project FileGenerator. You also can use ready exe from repository.
+Build and run project FileGenerator.
 You should enter the expected file size in kilobutes and wait.
 
-Also you can use ready files from repository: "gig" is the gigabyte test file, and "half" is the half-gigabyte test file.
+Also you can use ready file from repository: "small" is a test file.
 
 ## How to use the sorter
 
-Build and run project FileSorter. You also can use ready exe from repository.
+Build and run project FileSorter.
 You should enter the input file name. Note, that if you enter name without full path, we will try to use work directory.
 
 ## Where is the result?
