@@ -11,7 +11,7 @@ namespace FileSorter
 	{
 		public static async Task<HashSet<string>> SeparateFile(string fileNameWithPath)
 		{
-			int batchLength = 1000000; // 1000 kilobytes
+			int batchLength = 50 * 1024 * 1024; // 50 megabytes
 			long batchesCount = 0;
 			long fileSize = 0;
 			using (var fileStream = File.OpenRead(fileNameWithPath))
@@ -30,8 +30,8 @@ namespace FileSorter
 			string currentTempFileName;
 			var tempFilesNames = new HashSet<string>();
 
-			var filesSorter = new ParallelFilesSorter();
-			var filePertsToSort = new List<BatchDataForSort>();
+			var filesSorter = new FilesSorter();
+			var filePartsToSort = new List<BatchDataForSort>();
 
 			Console.WriteLine("Separation file started");
 			var sw = new Stopwatch();
@@ -45,7 +45,7 @@ namespace FileSorter
 				var fullFileName = Path.Combine(Directory.GetCurrentDirectory(), currentTempFileName);
 				tempFilesNames.Add(fullFileName);
 
-				filePertsToSort.Add(new BatchDataForSort(
+				filePartsToSort.Add(new BatchDataForSort(
 					i == 0,
 					i == batchesCount - 1,
 					fullFileName,
@@ -56,7 +56,7 @@ namespace FileSorter
 				currentPosition += currentBatchLength;
 			}
 
-			await filesSorter.SortFiles(filePertsToSort, fileNameWithPath);
+			await filesSorter.SortFiles(filePartsToSort, fileNameWithPath);
 
 			if (batchesCount > 1)
 			{

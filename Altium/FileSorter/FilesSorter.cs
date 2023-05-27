@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,7 +11,7 @@ using FileSorter.Models;
 
 namespace FileSorter
 {
-	internal class ParallelFilesSorter
+	internal class FilesSorter
 	{
 		private readonly ConcurrentDictionary<int, string> _tornLinesAtStart = new ConcurrentDictionary<int, string>();
 		private readonly ConcurrentDictionary<int, string> _tornLinesAtEnd = new ConcurrentDictionary<int, string>();
@@ -23,13 +22,17 @@ namespace FileSorter
 			var sw = new Stopwatch();
 			sw.Start();
 
-			var parallelismDegree = Math.Min(files.Count, Environment.ProcessorCount * 5);
-			var semaphore = new SemaphoreSlim(parallelismDegree, parallelismDegree);
+			var parallelismDegree = Math.Min(files.Count, Environment.ProcessorCount);
+			var semaphore = new SemaphoreSlim(0, parallelismDegree);
+
+			var tasks = new List<Task>();
 			foreach (var file in files)
 			{
-				await semaphore.WaitAsync();
-				InternalSortOneFile(file, inputFileNameWithPath, semaphore);
+				tasks.Add(InternalSortOneFile(file, inputFileNameWithPath, semaphore));
 			}
+
+			semaphore.Release(parallelismDegree);
+			await Task.WhenAll(tasks);
 
 			for (int i = 0; i < parallelismDegree; i++)
 			{
@@ -46,8 +49,10 @@ namespace FileSorter
 			SemaphoreSlim semaphore)
 		{
 			var currentLine = 0;
-			//var batchSize = batchDataForSort.InterruptionOffset - batchDataForSort.StartOffset;
 			var batch = new List<Line>();
+			Console.WriteLine($"ENTER {batchDataForSort.StartOffset}");
+			await semaphore.WaitAsync();
+			Console.WriteLine($"START {batchDataForSort.StartOffset}");
 			using (var fileReader = File.OpenRead(inputFileNameWithPath))
 			{
 				fileReader.Seek(batchDataForSort.StartOffset, SeekOrigin.Begin);
@@ -78,14 +83,14 @@ namespace FileSorter
 			}
 
 			batch.Sort();
-			RewriteTemporaryFile(batch, batchDataForSort.NameWithPath);
 			semaphore.Release();
+			Console.WriteLine($"RELEASE {batchDataForSort.StartOffset}");
+			RewriteTemporaryFile(batch, batchDataForSort.NameWithPath);
+			Console.WriteLine($"EXIT {batchDataForSort.StartOffset}");
 		}
 
 		private static void RewriteTemporaryFile(List<Line> lines, string fileName)
 		{
-			//File.Delete(fileName);
-
 			using var stream = File.Create(fileName);
 			using var writer = new StreamWriter(stream, Encoding.UTF8);
 			foreach (var line in lines)

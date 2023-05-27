@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -10,11 +11,12 @@ using FileSorter.Mappers;
 
 namespace FileSorter
 {
-	public static class FilesMerger
+	public class FilesMerger
 	{
 		private const int BufferSize = 128;
+		private ConcurrentQueue<string> _queue = new ConcurrentQueue<string>();
 
-		public static async Task<string> Merge(HashSet<string> filesPaths)
+		public async Task<string> Merge(HashSet<string> filesPaths)
 		{
 			Console.WriteLine("Merging started");
 			var sw = new Stopwatch();
@@ -50,11 +52,6 @@ namespace FileSorter
 			int currentFileNumber = 0;
 			string previousFileName = "";
 
-			var parallelismDegree = filesPaths.Count > Environment.ProcessorCount * 5
-				? Environment.ProcessorCount * 5
-				: filesPaths.Count;
-			var semaphore = new SemaphoreSlim(parallelismDegree, parallelismDegree);
-
 			var filesToMerge = new List<(string first, string second)>();
 			foreach (var path in filesPaths)
 			{
@@ -75,16 +72,25 @@ namespace FileSorter
 				mergedFiles.Add(previousFileName);
 			}
 
+			var parallelismDegree = Math.Min(filesPaths.Count, Environment.ProcessorCount);
+			var semaphore = new SemaphoreSlim(0, parallelismDegree);
+
+			var tasks = new List<Task>();
 			foreach (var filesPair in filesToMerge)
 			{
-				await semaphore.WaitAsync();
+				async Task Action()
+				{
+					var mergedFileName = $"temp_{currentMergedFileNumber++}.txt";
+					await MergeOnePair(mergedFileName, filesPair.first, filesPair.second, semaphore);
+					//++currentMergedFileNumber;
+					mergedFiles.Add(mergedFileName);
+				}
 
-				var mergedFileName = $"temp_{currentMergedFileNumber}.txt";
-				MergeOnePair(mergedFileName, filesPair.first, filesPair.second, semaphore);
-
-				++currentMergedFileNumber;
-				mergedFiles.Add(mergedFileName);
+				tasks.Add(Action());
 			}
+
+			semaphore.Release(parallelismDegree);
+			await Task.WhenAll(tasks);
 
 			for (int i = 0; i < parallelismDegree; i++)
 			{
@@ -96,6 +102,10 @@ namespace FileSorter
 
 		private static async Task MergeOnePair(string resultFileName, string firstFilePath, string secondFilePath, SemaphoreSlim semaphore)
 		{
+			Console.WriteLine($"ENTER {firstFilePath} + {secondFilePath} = {resultFileName}");
+			await semaphore.WaitAsync();
+
+			Console.WriteLine($"START {firstFilePath} + {secondFilePath} = {resultFileName}");
 			using var writer = new StreamWriter(resultFileName, true, Encoding.UTF8);
 
 			using var firstFileReader = new StreamReader(firstFilePath, Encoding.UTF8, false, BufferSize);
@@ -134,8 +144,8 @@ namespace FileSorter
 			}
 
 			await writer.FlushAsync();
-
 			await writer.DisposeAsync();
+
 			firstFileReader.Dispose();
 			secondFileReader.Dispose();
 
@@ -143,6 +153,7 @@ namespace FileSorter
 			File.Delete(secondFilePath);
 
 			semaphore.Release();
+			Console.WriteLine($"EXIT {firstFilePath} + {secondFilePath} = {resultFileName}");
 		}
 
 		private static HashSet<string> RecursivePairMerge(HashSet<string> filesPaths, int currentMergedFileNumber)

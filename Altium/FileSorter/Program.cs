@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace FileSorter
 {
@@ -31,10 +30,11 @@ namespace FileSorter
 
 			var tempFilesNames = FileSeparator.SeparateFile(fullFileName).GetAwaiter().GetResult();
 
+			var merger = new FilesMerger();
 			string resultFileName;
 			if (tempFilesNames.Count > 1)
 			{
-				resultFileName = (FilesMerger.Merge(tempFilesNames)).GetAwaiter().GetResult();
+				resultFileName = (merger.Merge(tempFilesNames)).GetAwaiter().GetResult();
 				TempFilesCleaner.CleanAllFiles(tempFilesNames);
 			}
 			else
