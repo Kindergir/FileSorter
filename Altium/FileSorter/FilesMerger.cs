@@ -13,7 +13,6 @@ namespace FileSorter
 {
 	public class FilesMerger
 	{
-		private const int BufferSize = 10 * 1024 * 102;
 		private ConcurrentQueue<string> _queue = new ConcurrentQueue<string>();
 
 		public async Task<string> Merge(HashSet<string> filesPaths)
@@ -106,10 +105,10 @@ namespace FileSorter
 			await semaphore.WaitAsync();
 
 			Console.WriteLine($"START {firstFilePath} + {secondFilePath} = {resultFileName}");
-			using var writer = new StreamWriter(resultFileName, true, Encoding.UTF8);
+			using var writer = new StreamWriter(resultFileName, true, Encoding.UTF8, Consts.BufferSize);
 
-			using var firstFileReader = new StreamReader(firstFilePath, Encoding.UTF8, false, BufferSize);
-			using var secondFileReader = new StreamReader(secondFilePath, Encoding.UTF8, false, BufferSize);
+			using var firstFileReader = new StreamReader(firstFilePath, Encoding.UTF8, false, Consts.BufferSize);
+			using var secondFileReader = new StreamReader(secondFilePath, Encoding.UTF8, false, Consts.BufferSize);
 
 			var firstParsedLine = (firstFileReader.ReadLine()).ToLine();
 			var secondParsedLine = (secondFileReader.ReadLine()).ToLine();
@@ -200,10 +199,10 @@ namespace FileSorter
 		private static string MergeFilesPair(string firstFilePath, string secondFilePath, int tempFileCount)
 		{
 			var resultFileName = $"temp_{tempFileCount}.txt";
-			using var writer = new StreamWriter(resultFileName, true, Encoding.UTF8);
+			using var writer = new StreamWriter(resultFileName, true, Encoding.UTF8, Consts.BufferSize);
 
-			using var firstFileReader = new StreamReader(firstFilePath, Encoding.UTF8, false, BufferSize);
-			using var secondFileReader = new StreamReader(secondFilePath, Encoding.UTF8, false, BufferSize);
+			using var firstFileReader = new StreamReader(firstFilePath, Encoding.UTF8, false, Consts.BufferSize);
+			using var secondFileReader = new StreamReader(secondFilePath, Encoding.UTF8, false, Consts.BufferSize);
 
 			var firstParsedLine = firstFileReader.ReadLine().ToLine();
 			var secondParsedLine = secondFileReader.ReadLine().ToLine();

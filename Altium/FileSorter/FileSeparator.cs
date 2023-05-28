@@ -11,7 +11,7 @@ namespace FileSorter
 	{
 		public static async Task<HashSet<string>> SeparateFile(string fileNameWithPath)
 		{
-			int batchLength = 50 * 1024 * 1024; // 50 megabytes
+			long batchLength = 50 * 1024 * 1024; // 50 megabytes
 			long batchesCount = 0;
 			long fileSize = 0;
 			using (var fileStream = File.OpenRead(fileNameWithPath))
@@ -37,10 +37,10 @@ namespace FileSorter
 			var sw = new Stopwatch();
 			sw.Start();
 
-			var currentPosition = 0;
-			for (int i = 0; i < batchesCount; i++)
+			long currentPosition = 0;
+			for (long i = 0; i < batchesCount; i++)
 			{
-				int currentBatchLength = i == batchesCount - 1 ? lastBatchLength : batchLength;
+				long currentBatchLength = i == batchesCount - 1 ? lastBatchLength : batchLength;
 				currentTempFileName = $"temp_{currentTempFileNumber}.txt";
 				var fullFileName = Path.Combine(Directory.GetCurrentDirectory(), currentTempFileName);
 				tempFilesNames.Add(fullFileName);

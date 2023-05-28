@@ -25,7 +25,7 @@ namespace FileGenerator
 			var resultFileName = $"Result_generation_{_random.Next(0, int.MaxValue)}";
 			var resultFilePath = Path.Combine(Directory.GetCurrentDirectory(), resultFileName);
 
-			using var writer = new StreamWriter(resultFilePath);
+			using var writer = new StreamWriter(resultFilePath, true, Encoding.UTF8, 10 * 1024 * 102);
 			while (true)
 			{
 				var currentIndex = _random.Next(0, _words.Count - 1);

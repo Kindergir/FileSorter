@@ -13,8 +13,8 @@ namespace FileSorter
 {
 	internal class FilesSorter
 	{
-		private readonly ConcurrentDictionary<int, string> _tornLinesAtStart = new ConcurrentDictionary<int, string>();
-		private readonly ConcurrentDictionary<int, string> _tornLinesAtEnd = new ConcurrentDictionary<int, string>();
+		private readonly ConcurrentDictionary<long, string> _tornLinesAtStart = new ConcurrentDictionary<long, string>();
+		private readonly ConcurrentDictionary<long, string> _tornLinesAtEnd = new ConcurrentDictionary<long, string>();
 
 		public async Task SortFiles(List<BatchDataForSort> files, string inputFileNameWithPath)
 		{
@@ -43,7 +43,7 @@ namespace FileSorter
 			Console.WriteLine($"Sorting files stopped, it took {sw.ElapsedMilliseconds}");
 		}
 
-		public async Task InternalSortOneFile(
+		private async Task InternalSortOneFile(
 			BatchDataForSort batchDataForSort,
 			string inputFileNameWithPath,
 			SemaphoreSlim semaphore)
@@ -92,7 +92,7 @@ namespace FileSorter
 		private static void RewriteTemporaryFile(List<Line> lines, string fileName)
 		{
 			using var stream = File.Create(fileName);
-			using var writer = new StreamWriter(stream, Encoding.UTF8);
+			using var writer = new StreamWriter(stream, Encoding.UTF8, Consts.BufferSize);
 			foreach (var line in lines)
 			{
 				writer.WriteLine(line.OriginalValue);
@@ -100,7 +100,7 @@ namespace FileSorter
 			writer.Flush();
 		}
 
-		public void SortLastFile(string outputFileName, int batchSize)
+		public void SortLastFile(string outputFileName, long batchSize)
 		{
 			var listOfFullLines = new List<Line>(_tornLinesAtStart.Count + 5);
 			foreach (var line in _tornLinesAtStart)
@@ -117,7 +117,7 @@ namespace FileSorter
 			listOfFullLines.Sort();
 
 			using var stream = File.Create(outputFileName);
-			using var writer = new StreamWriter(stream, Encoding.UTF8);
+			using var writer = new StreamWriter(stream, Encoding.UTF8, Consts.BufferSize);
 			foreach (var line in listOfFullLines)
 			{
 				writer.WriteLine(line.OriginalValue);
