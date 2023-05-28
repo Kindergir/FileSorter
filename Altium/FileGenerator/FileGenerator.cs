@@ -8,14 +8,15 @@ namespace FileGenerator
 	public class FileGenerator
 	{
 		private readonly Random _random = new Random();
+		private const int _wordsCount = 100000;
 		private const string Letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-		private readonly List<string> words = new List<string>();
+		private readonly List<string> _words = new List<string>(_wordsCount);
 
 		public FileGenerator()
 		{
-			for (int i = 0; i < 100000; i++)
+			for (int i = 0; i < _wordsCount; i++)
 			{
-				words.Add(GenerateRandomContent());
+				_words.Add(GenerateRandomContent());
 			}
 		}
 
@@ -27,8 +28,8 @@ namespace FileGenerator
 			using var writer = new StreamWriter(resultFilePath);
 			while (true)
 			{
-				var currentIndex = _random.Next(0, words.Count - 1);
-				var currentLineContent = words[currentIndex];
+				var currentIndex = _random.Next(0, _words.Count - 1);
+				var currentLineContent = _words[currentIndex];
 
 				var currentLine = $"{_random.Next(0, 100000)}. {currentLineContent}";
 				writer.WriteLine(currentLine);

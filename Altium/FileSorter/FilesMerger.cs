@@ -13,7 +13,7 @@ namespace FileSorter
 {
 	public class FilesMerger
 	{
-		private const int BufferSize = 128;
+		private const int BufferSize = 10 * 1024 * 102;
 		private ConcurrentQueue<string> _queue = new ConcurrentQueue<string>();
 
 		public async Task<string> Merge(HashSet<string> filesPaths)
@@ -52,7 +52,7 @@ namespace FileSorter
 			int currentFileNumber = 0;
 			string previousFileName = "";
 
-			var filesToMerge = new List<(string first, string second)>();
+			var filesToMerge = new List<(string first, string second)>(filesPaths.Count / 2);
 			foreach (var path in filesPaths)
 			{
 				if (currentFileNumber == 0)
@@ -75,7 +75,7 @@ namespace FileSorter
 			var parallelismDegree = Math.Min(filesPaths.Count, Environment.ProcessorCount);
 			var semaphore = new SemaphoreSlim(0, parallelismDegree);
 
-			var tasks = new List<Task>();
+			var tasks = new List<Task>(filesToMerge.Count);
 			foreach (var filesPair in filesToMerge)
 			{
 				async Task Action()

@@ -25,7 +25,7 @@ namespace FileSorter
 			var parallelismDegree = Math.Min(files.Count, Environment.ProcessorCount);
 			var semaphore = new SemaphoreSlim(0, parallelismDegree);
 
-			var tasks = new List<Task>();
+			var tasks = new List<Task>(files.Count);
 			foreach (var file in files)
 			{
 				tasks.Add(InternalSortOneFile(file, inputFileNameWithPath, semaphore));
@@ -49,14 +49,14 @@ namespace FileSorter
 			SemaphoreSlim semaphore)
 		{
 			var currentLine = 0;
-			var batch = new List<Line>();
+			var batch = new List<Line>(4000000);
 			Console.WriteLine($"ENTER {batchDataForSort.StartOffset}");
 			await semaphore.WaitAsync();
 			Console.WriteLine($"START {batchDataForSort.StartOffset}");
 			using (var fileReader = File.OpenRead(inputFileNameWithPath))
 			{
 				fileReader.Seek(batchDataForSort.StartOffset, SeekOrigin.Begin);
-				using (var reader = new StreamReader(fileReader))
+				using (var reader = new StreamReader(fileReader, Encoding.UTF8, false, 10 * 1024 * 102))
 				{
 					while (!reader.EndOfStream && fileReader.Position < batchDataForSort.InterruptionOffset)
 					{
@@ -102,7 +102,7 @@ namespace FileSorter
 
 		public void SortLastFile(string outputFileName, int batchSize)
 		{
-			var listOfFullLines = new List<Line>();
+			var listOfFullLines = new List<Line>(_tornLinesAtStart.Count + 5);
 			foreach (var line in _tornLinesAtStart)
 			{
 				if (!_tornLinesAtEnd.ContainsKey(line.Key - batchSize))

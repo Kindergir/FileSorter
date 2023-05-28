@@ -31,7 +31,7 @@ namespace FileSorter
 			var tempFilesNames = new HashSet<string>();
 
 			var filesSorter = new FilesSorter();
-			var filePartsToSort = new List<BatchDataForSort>();
+			var filePartsToSort = new List<BatchDataForSort>((int)batchesCount);
 
 			Console.WriteLine("Separation file started");
 			var sw = new Stopwatch();
