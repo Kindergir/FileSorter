@@ -1,21 +1,17 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using FileSorter.Mappers;
-using FileSorter.Models;
 
 namespace FileSorter
 {
 	public class FilesMerger
 	{
-		//private ConcurrentQueue<string> _queue = new ConcurrentQueue<string>();
 		private volatile int _alreadyFinishedMerges = 0;
 
 		public async Task<string> Merge(HashSet<string> filesPaths)
@@ -25,12 +21,6 @@ namespace FileSorter
 			sw.Start();
 
 			var currentMergedFileNumber = filesPaths.Count;
-			// while (filesPaths.Count > 1)
-			// {
-			// 	filesPaths = await ParallelPairMerge(filesPaths, currentMergedFileNumber);
-			// 	currentMergedFileNumber += filesPaths.Count;
-			// }
-			// var result = filesPaths.First();
 
 			var result = await TestPairMerge(filesPaths, currentMergedFileNumber);
 			var currentDirectory = Directory.GetCurrentDirectory();
@@ -71,23 +61,8 @@ namespace FileSorter
 
 			Console.WriteLine("Consume enter");
 
-			/*
-			new Task(() =>
-			{
-				while (true)
-				{
-					Console.WriteLine($"CURRENT IS {Interlocked.Read(ref _alreadyFinishedMerges)}");
-					if (Interlocked.Read(ref _alreadyFinishedMerges) == filesPaths.Count - 1)
-					{
-						channel.Writer.Complete();
-						break;
-					}
-				}
-			}).Start();
-			*/
-
 			var mergesCount = filesPaths.Count - (1 + filesPaths.Count % 2);
-			/*currentMergedFileNumber = await */ConsumeWithAwaitForeachAsync(
+			ConsumeWithAwaitForeachAsync(
 				channel.Reader,
 				channel.Writer,
 				currentMergedFileNumber,
@@ -98,9 +73,17 @@ namespace FileSorter
 				() => _alreadyFinishedMerges != mergesCount,
 				TimeSpan.FromMilliseconds(15));
 
+			var resultFileName = $"temp_{filesPaths.Count + mergesCount - 1}.txt";
+			if (currentFileNumber == 1)
+			{
+				var newResultFileName = $"temp_{filesPaths.Count + mergesCount}.txt";
+				SyncMergeOnePair(newResultFileName, previousFileName, resultFileName);
+				resultFileName = newResultFileName;
+			}
+
 			Console.WriteLine("Consume exit");
 			Console.WriteLine("Consume complete");
-			return $"temp_{filesPaths.Count + mergesCount - 1}.txt";
+			return resultFileName;
 		}
 
 		private async void ConsumeWithAwaitForeachAsync(
@@ -287,8 +270,8 @@ namespace FileSorter
 				writer.WriteLine(secondFileReader.ReadLine());
 			}
 
-			await writer.FlushAsync();
-			await writer.DisposeAsync();
+			writer.Flush();
+			writer.Dispose();
 
 			firstFileReader.Dispose();
 			secondFileReader.Dispose();
@@ -300,6 +283,55 @@ namespace FileSorter
 
 			Interlocked.Increment(ref _alreadyFinishedMerges);
 			Console.WriteLine($"CURRENT IS {_alreadyFinishedMerges}");
+		}
+
+		private void SyncMergeOnePair(string resultFileName, string firstFilePath, string secondFilePath)
+		{
+			using var writer = new StreamWriter(resultFileName, true, Encoding.UTF8, Consts.BufferSize);
+
+			using var firstFileReader = new StreamReader(firstFilePath, Encoding.UTF8, false, Consts.BufferSize);
+			using var secondFileReader = new StreamReader(secondFilePath, Encoding.UTF8, false, Consts.BufferSize);
+
+			var firstParsedLine = (firstFileReader.ReadLine()).ToLine();
+			var secondParsedLine = (secondFileReader.ReadLine()).ToLine();
+
+			while (true)
+			{
+				if (firstParsedLine > secondParsedLine)
+				{
+					writer.WriteLine(secondParsedLine.OriginalValue);
+					secondParsedLine = (secondFileReader.ReadLine()).ToLine();
+				}
+				else
+				{
+					writer.WriteLine(firstParsedLine.OriginalValue);
+					firstParsedLine = (firstFileReader.ReadLine()).ToLine();
+				}
+
+				if (firstFileReader.EndOfStream || secondFileReader.EndOfStream)
+				{
+					break;
+				}
+			}
+
+			while (!firstFileReader.EndOfStream)
+			{
+				writer.WriteLine(firstFileReader.ReadLine());
+			}
+
+			while (!secondFileReader.EndOfStream)
+			{
+				writer.WriteLine(secondFileReader.ReadLine());
+			}
+
+			writer.Flush();
+			writer.Dispose();
+
+			firstFileReader.Dispose();
+			secondFileReader.Dispose();
+
+			File.Delete(firstFilePath);
+			File.Delete(secondFilePath);
 		}
 
 		private static HashSet<string> RecursivePairMerge(HashSet<string> filesPaths, int currentMergedFileNumber)
