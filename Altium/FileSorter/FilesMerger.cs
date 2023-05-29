@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Channels;
@@ -13,6 +15,7 @@ namespace FileSorter
 	public class FilesMerger
 	{
 		private volatile int _alreadyFinishedMerges = 0;
+		private ConcurrentBag<string> _readyFiles = new ConcurrentBag<string>();
 
 		public async Task<string> Merge(HashSet<string> filesPaths)
 		{
@@ -49,6 +52,9 @@ namespace FileSorter
 				}
 				else
 				{
+					_readyFiles.Add(previousFileName);
+					_readyFiles.Add(filePath);
+
 					await channel.Writer.WriteAsync((
 						previousFileName,
 						filePath,
@@ -62,6 +68,7 @@ namespace FileSorter
 			Console.WriteLine("Consume enter");
 
 			var mergesCount = filesPaths.Count - (1 + filesPaths.Count % 2);
+
 			ConsumeWithAwaitForeachAsync(
 				channel.Reader,
 				channel.Writer,
@@ -69,9 +76,7 @@ namespace FileSorter
 				mergesCount);
 
 			Console.WriteLine($"EXPECTED IS {mergesCount}");
-			SpinWait.SpinUntil(
-				() => _alreadyFinishedMerges != mergesCount,
-				TimeSpan.FromMilliseconds(15));
+			var waiting = SpinWait.SpinUntil(() => _alreadyFinishedMerges == mergesCount, TimeSpan.FromHours(2));
 
 			var resultFileName = $"temp_{filesPaths.Count + mergesCount - 1}.txt";
 			if (currentFileNumber == 1)
@@ -95,9 +100,11 @@ namespace FileSorter
 			int currentFileNumber = 0;
 			string previousFileName = "";
 
+			//var tasks = new List<Task>(Environment.ProcessorCount);
 			await foreach (var files in reader.ReadAllAsync())
 			{
-				MergeOnePair(files.outputFileName, files.firstFileName, files.secondFileName);
+				//tasks.Add(MergeOnePair(files.outputFileName, files.firstFileName, files.secondFileName));
+				Task.Run(() => MergeOnePair(files.outputFileName, files.firstFileName, files.secondFileName));
 				if (currentFileNumber == 1)
 				{
 					await writer.WriteAsync((
@@ -230,8 +237,13 @@ namespace FileSorter
 			Console.WriteLine($"EXIT {firstFilePath} + {secondFilePath} = {resultFileName}");
 		}
 
-		private async void MergeOnePair(string resultFileName, string firstFilePath, string secondFilePath)
+		private async Task MergeOnePair(string resultFileName, string firstFilePath, string secondFilePath)
 		{
+			SpinWait.SpinUntil(() =>
+			{
+				return _readyFiles.Contains(firstFilePath) && _readyFiles.Contains(secondFilePath);
+			}, TimeSpan.FromHours(2));
+
 			Console.WriteLine($"START {firstFilePath} + {secondFilePath} = {resultFileName}");
 			using var writer = new StreamWriter(resultFileName, true, Encoding.UTF8, Consts.BufferSize);
 
@@ -281,6 +293,7 @@ namespace FileSorter
 
 			Console.WriteLine($"EXIT {firstFilePath} + {secondFilePath} = {resultFileName}");
 
+			_readyFiles.Add(resultFileName);
 			Interlocked.Increment(ref _alreadyFinishedMerges);
 			Console.WriteLine($"CURRENT IS {_alreadyFinishedMerges}");
 		}
