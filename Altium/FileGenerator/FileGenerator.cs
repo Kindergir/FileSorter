@@ -25,7 +25,8 @@ namespace FileGenerator
 			var resultFileName = $"Result_generation_{_random.Next(0, int.MaxValue)}";
 			var resultFilePath = Path.Combine(Directory.GetCurrentDirectory(), resultFileName);
 
-			using var writer = new StreamWriter(resultFilePath, true, Encoding.UTF8, 10 * 1024 * 102);
+			using var writer = new StreamWriter(resultFilePath, true, Encoding.UTF8, 128);
+			long kilobytes = 0;
 			while (true)
 			{
 				var currentIndex = _random.Next(0, _words.Count - 1);
@@ -35,9 +36,16 @@ namespace FileGenerator
 				writer.WriteLine(currentLine);
 
 				var fileInfo = new FileInfo(resultFilePath);
-				if (fileInfo.Length / 1000 >= sizeInKilobytes)
+				if (fileInfo.Length / 1024 >= sizeInKilobytes)
 				{
 					break;
+				}
+
+				if (fileInfo.Length / 1024 - kilobytes >= 1024)
+				{
+					Console.WriteLine($"SIZE IS {fileInfo.Length / 1024} KILOBYTES");
+					kilobytes = fileInfo.Length / 1024;
+					writer.Flush();
 				}
 			}
 
@@ -46,7 +54,8 @@ namespace FileGenerator
 
 		private string GenerateRandomContent()
 		{
-			var randomLength = _random.Next(1, 10);
+			var randomLength = _random.Next(1, 30);
+			
 			var builder = new StringBuilder();
 			for (int i = 0; i < randomLength; ++i)
 			{
