@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 
 namespace FileSorter
 {
@@ -18,7 +17,7 @@ namespace FileSorter
 				return;
 			}
 
-			var fullFileName = GetFullFileName(enteredFileName);
+			var fullFileName = TryGetFullFileName(enteredFileName);
 			if (fullFileName == null)
 			{
 				Console.WriteLine("Incorrect input: file should be exist.");
@@ -29,25 +28,14 @@ namespace FileSorter
 			sw.Start();
 
 			var tempFilesNames = FileSeparator.SeparateFile(fullFileName).GetAwaiter().GetResult();
-
-			var merger = new FilesMerger();
-			string resultFileName;
-			if (tempFilesNames.Count > 1)
-			{
-				resultFileName = (merger.Merge(tempFilesNames)).GetAwaiter().GetResult();
-				TempFilesCleaner.CleanAllFiles(tempFilesNames);
-			}
-			else
-			{
-				resultFileName = tempFilesNames.First();
-			}
-
+			var resultFileName = TempFilesCombiner.GetResultFileName(tempFilesNames);
+			
 			sw.Stop();
 
 			Console.WriteLine($"Great! Program used {sw.ElapsedMilliseconds} ms. Result file name is {resultFileName}.");
 		}
 
-		private static string GetFullFileName(string enteredFileName)
+		private static string TryGetFullFileName(string enteredFileName)
 		{
 			var probableFileName = Path.Combine(Directory.GetCurrentDirectory(), enteredFileName);
 			if (File.Exists(enteredFileName))

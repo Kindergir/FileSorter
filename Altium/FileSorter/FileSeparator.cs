@@ -18,9 +18,9 @@ namespace FileSorter
 				fileSize = fileStream.Length;
 			}
 
-			batchesCount = fileSize > Consts.Megabytes50 ? fileSize / Consts.Megabytes50 : 1;
-			int lastBatchLength = (int)(fileSize % Consts.Megabytes50);
-			if (lastBatchLength != 0 && fileSize > Consts.Megabytes50)
+			batchesCount = fileSize > Consts.Megabyte ? fileSize / Consts.Megabyte : 1;
+			int lastBatchLength = (int)(fileSize % Consts.Megabyte);
+			if (lastBatchLength != 0 && fileSize > Consts.Megabyte)
 			{
 				batchesCount += 1;
 			}
@@ -39,7 +39,7 @@ namespace FileSorter
 			long currentPosition = 0;
 			for (long i = 0; i < batchesCount; i++)
 			{
-				long currentBatchLength = i == batchesCount - 1 ? lastBatchLength : Consts.Megabytes50;
+				long currentBatchLength = i == batchesCount - 1 ? lastBatchLength : Consts.Megabyte;
 				currentTempFileName = $"temp_{currentTempFileNumber}.txt";
 				var fullFileName = Path.Combine(Directory.GetCurrentDirectory(), currentTempFileName);
 				tempFilesNames.Add(fullFileName);
@@ -49,7 +49,7 @@ namespace FileSorter
 					i == batchesCount - 1,
 					fullFileName,
 					currentPosition,
-					currentPosition + Consts.Megabytes50));
+					currentPosition + Consts.Megabyte));
 
 				++currentTempFileNumber;
 				currentPosition += currentBatchLength;
@@ -62,7 +62,7 @@ namespace FileSorter
 				currentTempFileName = $"temp_{currentTempFileNumber}.txt";
 				var lastFullFileName = Path.Combine(Directory.GetCurrentDirectory(), currentTempFileName);
 				tempFilesNames.Add(lastFullFileName);
-				filesSorter.SortLastFile(lastFullFileName, Consts.Megabytes50);
+				filesSorter.SortLastFile(lastFullFileName, Consts.Megabyte);
 			}
 
 			sw.Stop();

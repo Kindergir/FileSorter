@@ -56,11 +56,16 @@ namespace FileSorter
 			using (var fileReader = File.OpenRead(inputFileNameWithPath))
 			{
 				fileReader.Seek(batchDataForSort.StartOffset, SeekOrigin.Begin);
-				using (var reader = new StreamReader(fileReader, Encoding.UTF8, false, Consts.Megabytes50))
+				using (var reader = new StreamReader(fileReader, Encoding.UTF8, false, Consts.Megabyte))
 				{
 					while (!reader.EndOfStream && fileReader.Position < batchDataForSort.InterruptionOffset)
 					{
 						var line = reader.ReadLine();
+
+						if (string.IsNullOrWhiteSpace(line))
+						{
+							continue;
+						}
 
 						if (currentLine == 0 && !batchDataForSort.IsItFirstFile)
 						{
@@ -92,7 +97,7 @@ namespace FileSorter
 		private static void RewriteTemporaryFile(List<Line> lines, string fileName)
 		{
 			using var stream = File.Create(fileName);
-			using var writer = new StreamWriter(stream, Encoding.UTF8, Consts.Megabytes50);
+			using var writer = new StreamWriter(stream, Encoding.UTF8, Consts.Megabyte);
 			foreach (var line in lines)
 			{
 				writer.WriteLine(line.OriginalValue);
@@ -117,7 +122,7 @@ namespace FileSorter
 			listOfFullLines.Sort();
 
 			using var stream = File.Create(outputFileName);
-			using var writer = new StreamWriter(stream, Encoding.UTF8, Consts.Megabytes50);
+			using var writer = new StreamWriter(stream, Encoding.UTF8, Consts.Megabyte);
 			foreach (var line in listOfFullLines)
 			{
 				writer.WriteLine(line.OriginalValue);
