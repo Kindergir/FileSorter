@@ -11,7 +11,6 @@ namespace FileSorter
 	{
 		public static async Task<HashSet<string>> SeparateFile(string fileNameWithPath)
 		{
-			long batchLength = 50 * 1024 * 1024; // 50 megabytes
 			long batchesCount = 0;
 			long fileSize = 0;
 			using (var fileStream = File.OpenRead(fileNameWithPath))
@@ -19,9 +18,9 @@ namespace FileSorter
 				fileSize = fileStream.Length;
 			}
 
-			batchesCount = fileSize > batchLength ? fileSize / batchLength : 1;
-			int lastBatchLength = (int)(fileSize % batchLength);
-			if (lastBatchLength != 0 && fileSize > batchLength)
+			batchesCount = fileSize > Consts.Megabytes50 ? fileSize / Consts.Megabytes50 : 1;
+			int lastBatchLength = (int)(fileSize % Consts.Megabytes50);
+			if (lastBatchLength != 0 && fileSize > Consts.Megabytes50)
 			{
 				batchesCount += 1;
 			}
@@ -40,7 +39,7 @@ namespace FileSorter
 			long currentPosition = 0;
 			for (long i = 0; i < batchesCount; i++)
 			{
-				long currentBatchLength = i == batchesCount - 1 ? lastBatchLength : batchLength;
+				long currentBatchLength = i == batchesCount - 1 ? lastBatchLength : Consts.Megabytes50;
 				currentTempFileName = $"temp_{currentTempFileNumber}.txt";
 				var fullFileName = Path.Combine(Directory.GetCurrentDirectory(), currentTempFileName);
 				tempFilesNames.Add(fullFileName);
@@ -50,7 +49,7 @@ namespace FileSorter
 					i == batchesCount - 1,
 					fullFileName,
 					currentPosition,
-					currentPosition + batchLength));
+					currentPosition + Consts.Megabytes50));
 
 				++currentTempFileNumber;
 				currentPosition += currentBatchLength;
@@ -63,7 +62,7 @@ namespace FileSorter
 				currentTempFileName = $"temp_{currentTempFileNumber}.txt";
 				var lastFullFileName = Path.Combine(Directory.GetCurrentDirectory(), currentTempFileName);
 				tempFilesNames.Add(lastFullFileName);
-				filesSorter.SortLastFile(lastFullFileName, batchLength);
+				filesSorter.SortLastFile(lastFullFileName, Consts.Megabytes50);
 			}
 
 			sw.Stop();

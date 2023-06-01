@@ -44,7 +44,7 @@ namespace FileSorter
 
 			sw.Stop();
 
-			Console.WriteLine($"Great! Program used {sw.ElapsedMilliseconds} ms. Count of temporary files is {tempFilesNames.Count}. Result file name is {resultFileName}.");
+			Console.WriteLine($"Great! Program used {sw.ElapsedMilliseconds} ms. Result file name is {resultFileName}.");
 		}
 
 		private static string GetFullFileName(string enteredFileName)

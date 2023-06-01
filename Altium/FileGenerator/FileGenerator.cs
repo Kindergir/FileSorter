@@ -9,6 +9,7 @@ namespace FileGenerator
 	{
 		private readonly Random _random = new Random();
 		private const int _wordsCount = 100000;
+		private const int _number1024 = 1024;
 		private const string Letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 		private readonly List<string> _words = new List<string>(_wordsCount);
 
@@ -36,15 +37,16 @@ namespace FileGenerator
 				writer.WriteLine(currentLine);
 
 				var fileInfo = new FileInfo(resultFilePath);
-				if (fileInfo.Length / 1024 >= sizeInKilobytes)
+				var fileSizeInKilobytes = fileInfo.Length / _number1024;
+				if (fileSizeInKilobytes >= sizeInKilobytes)
 				{
 					break;
 				}
 
-				if (fileInfo.Length / 1024 - kilobytes >= 1024)
+				if (fileSizeInKilobytes - kilobytes >= _number1024)
 				{
-					Console.WriteLine($"SIZE IS {fileInfo.Length / 1024} KILOBYTES");
-					kilobytes = fileInfo.Length / 1024;
+					Console.WriteLine($"SIZE IS {fileSizeInKilobytes} KILOBYTES");
+					kilobytes = fileSizeInKilobytes;
 					writer.Flush();
 				}
 			}
