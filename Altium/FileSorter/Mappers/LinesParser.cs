@@ -20,12 +20,18 @@ namespace FileSorter.Mappers
 				return false;
 			}
 
-			if (line.Length < 4)
+			if (line.Length - dotPosition < 2)
 			{
 				return false;
 			}
 
-			result = new Line(number, line.AsSpan(dotPosition + 2).ToString(), line);
+			var content = line.AsSpan(dotPosition + 2).ToString();
+			if (string.IsNullOrWhiteSpace(content))
+			{
+				return false;
+			}
+
+			result = new Line(number, content, line);
 			return true;
 		}
 	}
