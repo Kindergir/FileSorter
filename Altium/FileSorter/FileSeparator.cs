@@ -12,15 +12,16 @@ namespace FileSorter
 		public static async Task<HashSet<string>> SeparateFile(string fileNameWithPath)
 		{
 			long batchesCount = 0;
+			long batchSize = Consts.Megabytes50;
 			long fileSize = 0;
 			using (var fileStream = File.OpenRead(fileNameWithPath))
 			{
 				fileSize = fileStream.Length;
 			}
 
-			batchesCount = fileSize > Consts.Megabyte ? fileSize / Consts.Megabyte : 1;
-			int lastBatchLength = (int)(fileSize % Consts.Megabyte);
-			if (lastBatchLength != 0 && fileSize > Consts.Megabyte)
+			batchesCount = fileSize > batchSize ? fileSize / batchSize : 1;
+			int lastBatchLength = (int)(fileSize % batchSize);
+			if (lastBatchLength != 0 && fileSize > batchSize)
 			{
 				batchesCount += 1;
 			}
@@ -39,7 +40,7 @@ namespace FileSorter
 			long currentPosition = 0;
 			for (long i = 0; i < batchesCount; i++)
 			{
-				long currentBatchLength = i == batchesCount - 1 ? lastBatchLength : Consts.Megabyte;
+				long currentBatchLength = i == batchesCount - 1 ? lastBatchLength : batchSize;
 				currentTempFileName = $"temp_{currentTempFileNumber}.txt";
 				var fullFileName = Path.Combine(Directory.GetCurrentDirectory(), currentTempFileName);
 				tempFilesNames.Add(fullFileName);
@@ -49,7 +50,7 @@ namespace FileSorter
 					i == batchesCount - 1,
 					fullFileName,
 					currentPosition,
-					currentPosition + Consts.Megabyte));
+					currentPosition + batchSize));
 
 				++currentTempFileNumber;
 				currentPosition += currentBatchLength;
@@ -62,7 +63,7 @@ namespace FileSorter
 				currentTempFileName = $"temp_{currentTempFileNumber}.txt";
 				var lastFullFileName = Path.Combine(Directory.GetCurrentDirectory(), currentTempFileName);
 				tempFilesNames.Add(lastFullFileName);
-				filesSorter.SortLastFile(lastFullFileName, Consts.Megabyte);
+				filesSorter.SortLastFile(lastFullFileName, batchSize);
 			}
 
 			sw.Stop();
