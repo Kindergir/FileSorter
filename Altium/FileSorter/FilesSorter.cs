@@ -50,9 +50,7 @@ namespace FileSorter
 		{
 			var currentLine = 0;
 			var batch = new List<Line>(4000000);
-			Console.WriteLine($"ENTER {batchDataForSort.StartOffset}");
 			await semaphore.WaitAsync();
-			Console.WriteLine($"START {batchDataForSort.StartOffset}");
 			using (var fileReader = File.OpenRead(inputFileNameWithPath))
 			{
 				fileReader.Seek(batchDataForSort.StartOffset, SeekOrigin.Begin);
@@ -95,9 +93,7 @@ namespace FileSorter
 
 			batch.Sort();
 			semaphore.Release();
-			Console.WriteLine($"RELEASE {batchDataForSort.StartOffset}");
 			RewriteTemporaryFile(batch, batchDataForSort.NameWithPath);
-			Console.WriteLine($"EXIT {batchDataForSort.StartOffset}");
 		}
 
 		private static void RewriteTemporaryFile(List<Line> lines, string fileName)

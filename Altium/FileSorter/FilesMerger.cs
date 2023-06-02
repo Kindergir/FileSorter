@@ -60,8 +60,6 @@ namespace FileSorter
 				previousFileName = filePath;
 			}
 
-			Console.WriteLine("Consume enter");
-
 			var mergesCount = filesPaths.Count - (1 + filesPaths.Count % 2);
 
 			ConsumeWithAwaitForeachAsync(
@@ -70,9 +68,7 @@ namespace FileSorter
 				currentMergedFileNumber,
 				mergesCount);
 
-			Console.WriteLine($"EXPECTED IS {mergesCount}");
 			var waiting = SpinWait.SpinUntil(() => _alreadyFinishedMerges == mergesCount, TimeSpan.FromHours(2));
-
 			var resultFileName = $"temp_{filesPaths.Count + mergesCount - 1}.txt";
 			if (currentFileNumber == 1)
 			{
@@ -81,8 +77,6 @@ namespace FileSorter
 				resultFileName = newResultFileName;
 			}
 
-			Console.WriteLine("Consume exit");
-			Console.WriteLine("Consume complete");
 			return resultFileName;
 		}
 
@@ -124,9 +118,7 @@ namespace FileSorter
 				return _readyFiles.Contains(firstFilePath) && _readyFiles.Contains(secondFilePath);
 			}, TimeSpan.FromHours(2));
 
-			Console.WriteLine($"START {firstFilePath} + {secondFilePath} = {resultFileName}");
 			using var writer = new StreamWriter(resultFileName, true, Encoding.UTF8, Consts.Megabyte);
-
 			using var firstFileReader = new StreamReader(firstFilePath, Encoding.UTF8, false, Consts.Megabyte);
 			using var secondFileReader = new StreamReader(secondFilePath, Encoding.UTF8, false, Consts.Megabyte);
 
@@ -171,11 +163,8 @@ namespace FileSorter
 			File.Delete(firstFilePath);
 			File.Delete(secondFilePath);
 
-			Console.WriteLine($"EXIT {firstFilePath} + {secondFilePath} = {resultFileName}");
-
 			_readyFiles.Add(resultFileName);
 			Interlocked.Increment(ref _alreadyFinishedMerges);
-			Console.WriteLine($"CURRENT IS {_alreadyFinishedMerges}");
 		}
 
 		private void SyncMergeOnePair(string resultFileName, string firstFilePath, string secondFilePath)
