@@ -1,12 +1,32 @@
-﻿using FileSorter.Models;
+﻿using System;
+using FileSorter.Models;
 
 namespace FileSorter.Mappers
 {
 	public static class LinesParser
 	{
-		public static Line ToLine(this string line)
+		public static bool ToLine(this string line, out Line result)
 		{
-			return new Line(line);
+			result = new Line();
+
+			var dotPosition = line.IndexOf('.', StringComparison.Ordinal);
+			if (dotPosition == -1)
+			{
+				return false;
+			}
+
+			if (!long.TryParse(line.AsSpan(0, dotPosition), out var number))
+			{
+				return false;
+			}
+
+			if (line.Length < 4)
+			{
+				return false;
+			}
+
+			result = new Line(number, line.AsSpan(dotPosition + 2).ToString(), line);
+			return true;
 		}
 	}
 }

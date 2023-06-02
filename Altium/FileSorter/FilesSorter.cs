@@ -62,27 +62,33 @@ namespace FileSorter
 					{
 						var line = reader.ReadLine();
 
-						if (string.IsNullOrWhiteSpace(line))
-						{
-							continue;
-						}
-
 						if (currentLine == 0 && !batchDataForSort.IsItFirstFile)
 						{
-							_tornLinesAtStart.TryAdd(batchDataForSort.InterruptionOffset, line); // possible problem on failed try
-                            currentLine++;
+							if (!string.IsNullOrWhiteSpace(line))
+							{
+								_tornLinesAtStart.TryAdd(batchDataForSort.InterruptionOffset, line); // possible problem on failed try
+								currentLine++;
+							}
 							continue;
 						}
 
 						if (fileReader.Position >= batchDataForSort.InterruptionOffset && !batchDataForSort.IsItLastFile)
 						{
-							_tornLinesAtEnd.TryAdd(batchDataForSort.InterruptionOffset, line); // possible problem on failed try
+							if (!string.IsNullOrWhiteSpace(line))
+							{
+								_tornLinesAtEnd.TryAdd(batchDataForSort.InterruptionOffset, line); // possible problem on failed try
+								currentLine++;
+							}
+							continue;
+						}
+
+						if (!line.ToLine(out var parsedLine))
+						{
 							currentLine++;
 							continue;
 						}
 
-						batch.Add(line.ToLine());
-						currentLine++;
+						batch.Add(parsedLine);
 					}
 				}
 			}
@@ -116,7 +122,8 @@ namespace FileSorter
 					continue;
 				}
 				var half = _tornLinesAtEnd[line.Key - batchSize];
-				listOfFullLines.Add($"{half}{line.Value}".ToLine());
+				$"{half}{line.Value}".ToLine(out var parsedLine);
+				listOfFullLines.Add(parsedLine);
 			}
 
 			listOfFullLines.Sort();

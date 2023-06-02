@@ -25,13 +25,13 @@ namespace FileSorter
 
 			var currentMergedFileNumber = filesPaths.Count;
 
-			var result = await TestPairMerge(filesPaths, currentMergedFileNumber);
+			var result = await ParallelPairMerge(filesPaths, currentMergedFileNumber);
 			sw.Stop();
 			Console.WriteLine($"Merging stopped, it took {sw.ElapsedMilliseconds}");
 			return result;
 		}
 
-		private async Task<string> TestPairMerge(
+		private async Task<string> ParallelPairMerge(
 			HashSet<string> filesPaths,
 			int currentMergedFileNumber)
 		{
@@ -117,121 +117,6 @@ namespace FileSorter
 			}
 		}
 
-		private static async Task<HashSet<string>> ParallelPairMerge(HashSet<string> filesPaths, int currentMergedFileNumber)
-		{
-			if (filesPaths.Count == 1)
-			{
-				return filesPaths;
-			}
-
-			var mergedFiles = new HashSet<string>();
-
-			int currentFileNumber = 0;
-			string previousFileName = "";
-
-			var filesToMerge = new List<(string first, string second)>(filesPaths.Count / 2);
-			foreach (var path in filesPaths)
-			{
-				if (currentFileNumber == 0)
-				{
-					currentFileNumber = 1;
-				}
-				else
-				{
-					filesToMerge.Add((previousFileName, path));
-					currentFileNumber = 0;
-				}
-				previousFileName = path;
-			}
-
-			if (currentFileNumber == 1)
-			{
-				mergedFiles.Add(previousFileName);
-			}
-
-			var parallelismDegree = Math.Min(filesPaths.Count, Environment.ProcessorCount);
-			var semaphore = new SemaphoreSlim(0, parallelismDegree);
-
-			var tasks = new List<Task>(filesToMerge.Count);
-			foreach (var filesPair in filesToMerge)
-			{
-				async Task Action()
-				{
-					var mergedFileName = $"temp_{currentMergedFileNumber++}.txt";
-					await MergeOnePair(mergedFileName, filesPair.first, filesPair.second, semaphore);
-					mergedFiles.Add(mergedFileName);
-				}
-
-				tasks.Add(Action());
-			}
-
-			semaphore.Release(parallelismDegree);
-			await Task.WhenAll(tasks);
-
-			for (int i = 0; i < parallelismDegree; i++)
-			{
-				await semaphore.WaitAsync();
-			}
-
-			return mergedFiles;
-		}
-
-		private static async Task MergeOnePair(string resultFileName, string firstFilePath, string secondFilePath, SemaphoreSlim semaphore)
-		{
-			Console.WriteLine($"ENTER {firstFilePath} + {secondFilePath} = {resultFileName}");
-			await semaphore.WaitAsync();
-
-			Console.WriteLine($"START {firstFilePath} + {secondFilePath} = {resultFileName}");
-			using var writer = new StreamWriter(resultFileName, true, Encoding.UTF8, Consts.Megabyte);
-
-			using var firstFileReader = new StreamReader(firstFilePath, Encoding.UTF8, false, Consts.Megabyte);
-			using var secondFileReader = new StreamReader(secondFilePath, Encoding.UTF8, false, Consts.Megabyte);
-
-			var firstParsedLine = (firstFileReader.ReadLine()).ToLine();
-			var secondParsedLine = (secondFileReader.ReadLine()).ToLine();
-
-			while (true)
-			{
-				if (firstParsedLine > secondParsedLine)
-				{
-					writer.WriteLine(secondParsedLine.OriginalValue);
-					secondParsedLine = (secondFileReader.ReadLine()).ToLine();
-				}
-				else
-				{
-					writer.WriteLine(firstParsedLine.OriginalValue);
-					firstParsedLine = (firstFileReader.ReadLine()).ToLine();
-				}
-
-				if (firstFileReader.EndOfStream || secondFileReader.EndOfStream)
-				{
-					break;
-				}
-			}
-
-			while (!firstFileReader.EndOfStream)
-			{
-				writer.WriteLine(firstFileReader.ReadLine());
-			}
-
-			while (!secondFileReader.EndOfStream)
-			{
-				writer.WriteLine(secondFileReader.ReadLine());
-			}
-
-			await writer.FlushAsync();
-			await writer.DisposeAsync();
-
-			firstFileReader.Dispose();
-			secondFileReader.Dispose();
-
-			File.Delete(firstFilePath);
-			File.Delete(secondFilePath);
-
-			semaphore.Release();
-			Console.WriteLine($"EXIT {firstFilePath} + {secondFilePath} = {resultFileName}");
-		}
-
 		private async Task MergeOnePair(string resultFileName, string firstFilePath, string secondFilePath)
 		{
 			SpinWait.SpinUntil(() =>
@@ -245,20 +130,20 @@ namespace FileSorter
 			using var firstFileReader = new StreamReader(firstFilePath, Encoding.UTF8, false, Consts.Megabyte);
 			using var secondFileReader = new StreamReader(secondFilePath, Encoding.UTF8, false, Consts.Megabyte);
 
-			var firstParsedLine = (firstFileReader.ReadLine()).ToLine();
-			var secondParsedLine = (secondFileReader.ReadLine()).ToLine();
+			firstFileReader.ReadLine().ToLine(out var firstParsedLine);
+			secondFileReader.ReadLine().ToLine(out var secondParsedLine);
 
 			while (true)
 			{
 				if (firstParsedLine > secondParsedLine)
 				{
 					writer.WriteLine(secondParsedLine.OriginalValue);
-					secondParsedLine = (secondFileReader.ReadLine()).ToLine();
+					secondFileReader.ReadLine().ToLine(out secondParsedLine);
 				}
 				else
 				{
 					writer.WriteLine(firstParsedLine.OriginalValue);
-					firstParsedLine = (firstFileReader.ReadLine()).ToLine();
+					firstFileReader.ReadLine().ToLine(out firstParsedLine);
 				}
 
 				if (firstFileReader.EndOfStream || secondFileReader.EndOfStream)
@@ -300,20 +185,20 @@ namespace FileSorter
 			using var firstFileReader = new StreamReader(firstFilePath, Encoding.UTF8, false, Consts.Megabyte);
 			using var secondFileReader = new StreamReader(secondFilePath, Encoding.UTF8, false, Consts.Megabyte);
 
-			var firstParsedLine = (firstFileReader.ReadLine()).ToLine();
-			var secondParsedLine = (secondFileReader.ReadLine()).ToLine();
+			firstFileReader.ReadLine().ToLine(out var firstParsedLine);
+			secondFileReader.ReadLine().ToLine(out var secondParsedLine);
 
 			while (true)
 			{
 				if (firstParsedLine > secondParsedLine)
 				{
 					writer.WriteLine(secondParsedLine.OriginalValue);
-					secondParsedLine = (secondFileReader.ReadLine()).ToLine();
+					secondFileReader.ReadLine().ToLine(out secondParsedLine);
 				}
 				else
 				{
 					writer.WriteLine(firstParsedLine.OriginalValue);
-					firstParsedLine = (firstFileReader.ReadLine()).ToLine();
+					firstFileReader.ReadLine().ToLine(out firstParsedLine);
 				}
 
 				if (firstFileReader.EndOfStream || secondFileReader.EndOfStream)
@@ -340,92 +225,6 @@ namespace FileSorter
 
 			File.Delete(firstFilePath);
 			File.Delete(secondFilePath);
-		}
-
-		private static HashSet<string> RecursivePairMerge(HashSet<string> filesPaths, int currentMergedFileNumber)
-		{
-			if (filesPaths.Count == 1)
-			{
-				return filesPaths;
-			}
-
-			var currentLevelPairs = new HashSet<string>();
-
-			int currentFileNumber = 0;
-			string previousFileName = "";
-
-			foreach (var path in filesPaths)
-			{
-				if (currentFileNumber == 0)
-				{
-					currentFileNumber = 1;
-				}
-				else
-				{
-					var mergedFileName = MergeFilesPair(previousFileName, path, currentMergedFileNumber);
-
-					File.Delete(previousFileName);
-					File.Delete(path);
-
-					++currentMergedFileNumber;
-					currentLevelPairs.Add(mergedFileName);
-					currentFileNumber = 0;
-				}
-
-				previousFileName = path;
-			}
-
-			if (currentFileNumber == 1)
-			{
-				currentLevelPairs.Add(previousFileName);
-			}
-
-			return RecursivePairMerge(currentLevelPairs, currentMergedFileNumber);
-		}
-
-		private static string MergeFilesPair(string firstFilePath, string secondFilePath, int tempFileCount)
-		{
-			var resultFileName = $"temp_{tempFileCount}.txt";
-			using var writer = new StreamWriter(resultFileName, true, Encoding.UTF8, Consts.Megabyte);
-
-			using var firstFileReader = new StreamReader(firstFilePath, Encoding.UTF8, false, Consts.Megabyte);
-			using var secondFileReader = new StreamReader(secondFilePath, Encoding.UTF8, false, Consts.Megabyte);
-
-			var firstParsedLine = firstFileReader.ReadLine().ToLine();
-			var secondParsedLine = secondFileReader.ReadLine().ToLine();
-
-			while (true)
-			{
-				if (firstParsedLine > secondParsedLine)
-				{
-					writer.WriteLine(secondParsedLine.OriginalValue);
-					secondParsedLine = secondFileReader.ReadLine().ToLine();
-				}
-				else
-				{
-					writer.WriteLine(firstParsedLine.OriginalValue);
-					firstParsedLine = firstFileReader.ReadLine().ToLine();
-				}
-
-				if (firstFileReader.EndOfStream || secondFileReader.EndOfStream)
-				{
-					break;
-				}
-			}
-
-			while (!firstFileReader.EndOfStream)
-			{
-				writer.WriteLine(firstFileReader.ReadLine());
-			}
-
-			while (!secondFileReader.EndOfStream)
-			{
-				writer.WriteLine(secondFileReader.ReadLine());
-			}
-
-			writer.Flush();
-
-			return resultFileName;
 		}
 	}
 }

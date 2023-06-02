@@ -4,23 +4,15 @@ namespace FileSorter.Models
 {
 	public readonly struct Line : IComparable<Line>, IEquatable<Line>
 	{
-		public int Number { get; }
+		public long Number { get; }
 		public string Content { get; }
 		public string OriginalValue { get; }
 
-		public Line(int number, string content, string originalValue)
+		public Line(long number, string content, string originalValue)
 		{
 			Number = number;
 			Content = content;
 			OriginalValue = originalValue;
-		}
-
-		public Line(string line)
-		{
-			var dotPosition = line.IndexOf('.', StringComparison.Ordinal);
-			Number = int.Parse(line.AsSpan(0, dotPosition));
-			Content = line.AsSpan(dotPosition + 2).ToString();
-			OriginalValue = line;
 		}
 
 		public static bool operator > (Line first, Line second)
