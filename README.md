@@ -15,11 +15,20 @@ Also you can use ready file from repository: "small" is a test file.
 
 Build and run project FileSorter.
 You should enter the input file name. Note, that if you enter name without full path, we will try to use work directory.
+If you enter path to non-existent file, program will end.
 
 ## Where is the result?
 
 The result (file) will be in the application work directory.
 You will see the name of result file when work is finished.
+
+## Input file format
+Sorter can work with text file, which contains lines like "Number. String".
+All incorrect lines will be skipped. If file contains only incorrect lines, result file will be empty.
+
+### Example
+234. Op
+2. Bla bla bla
 
 ## Pay attention
 
