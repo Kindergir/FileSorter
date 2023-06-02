@@ -33,6 +33,7 @@ namespace FileSorter
 			sw.Stop();
 
 			Console.WriteLine($"Great! Program used {sw.ElapsedMilliseconds} ms. Result file name is {resultFileName}.");
+			Console.ReadLine();
 		}
 
 		private static string TryGetFullFileName(string enteredFileName)
