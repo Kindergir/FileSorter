@@ -114,7 +114,6 @@ namespace FileSorter
 			{
 				if (!_tornLinesAtEnd.ContainsKey(line.Key - batchSize))
 				{
-					// temporary solution
 					continue;
 				}
 				var half = _tornLinesAtEnd[line.Key - batchSize];

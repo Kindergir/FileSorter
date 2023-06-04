@@ -15,7 +15,7 @@ namespace FileSorter
 	public class FilesMerger
 	{
 		private volatile int _alreadyFinishedMerges = 0;
-		private ConcurrentBag<string> _readyFiles = new ConcurrentBag<string>();
+		private readonly ConcurrentBag<string> _readyFiles = new ConcurrentBag<string>();
 
 		public async Task<string> Merge(HashSet<string> filesPaths)
 		{
@@ -65,8 +65,7 @@ namespace FileSorter
 			ConsumeWithAwaitForeachAsync(
 				channel.Reader,
 				channel.Writer,
-				currentMergedFileNumber,
-				mergesCount);
+				currentMergedFileNumber);
 
 			var waiting = SpinWait.SpinUntil(() => _alreadyFinishedMerges == mergesCount, TimeSpan.FromHours(2));
 			var resultFileName = $"temp_{filesPaths.Count + mergesCount - 1}.txt";
@@ -83,16 +82,13 @@ namespace FileSorter
 		private async void ConsumeWithAwaitForeachAsync(
 			ChannelReader<(string firstFileName, string secondFileName, string outputFileName)> reader,
 			ChannelWriter<(string firstFileName, string secondFileName, string outputFileName)> writer,
-			int currentMergedFileNumber,
-			int mergesCount)
+			int currentMergedFileNumber)
 		{
 			int currentFileNumber = 0;
 			string previousFileName = "";
 
-			//var tasks = new List<Task>(Environment.ProcessorCount);
 			await foreach (var files in reader.ReadAllAsync())
 			{
-				//tasks.Add(MergeOnePair(files.outputFileName, files.firstFileName, files.secondFileName));
 				Task.Run(() => MergeOnePair(files.outputFileName, files.firstFileName, files.secondFileName));
 				if (currentFileNumber == 1)
 				{
