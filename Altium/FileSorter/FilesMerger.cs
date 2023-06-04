@@ -118,9 +118,9 @@ namespace FileSorter
 				return _readyFiles.Contains(firstFilePath) && _readyFiles.Contains(secondFilePath);
 			}, TimeSpan.FromHours(2));
 
-			using var writer = new StreamWriter(resultFileName, true, Encoding.UTF8, Consts.Megabyte);
-			using var firstFileReader = new StreamReader(firstFilePath, Encoding.UTF8, false, Consts.Megabyte);
-			using var secondFileReader = new StreamReader(secondFilePath, Encoding.UTF8, false, Consts.Megabyte);
+			using var writer = new StreamWriter(resultFileName, true, Encoding.UTF8, Consts.Megabytes10);
+			using var firstFileReader = new StreamReader(firstFilePath, Encoding.UTF8, false, Consts.Megabytes10);
+			using var secondFileReader = new StreamReader(secondFilePath, Encoding.UTF8, false, Consts.Megabytes10);
 
 			firstFileReader.ReadLine().ToLine(out var firstParsedLine);
 			secondFileReader.ReadLine().ToLine(out var secondParsedLine);
@@ -169,10 +169,10 @@ namespace FileSorter
 
 		private void SyncMergeOnePair(string resultFileName, string firstFilePath, string secondFilePath)
 		{
-			using var writer = new StreamWriter(resultFileName, true, Encoding.UTF8, Consts.Megabyte);
+			using var writer = new StreamWriter(resultFileName, true, Encoding.UTF8, Consts.Megabytes10);
 
-			using var firstFileReader = new StreamReader(firstFilePath, Encoding.UTF8, false, Consts.Megabyte);
-			using var secondFileReader = new StreamReader(secondFilePath, Encoding.UTF8, false, Consts.Megabyte);
+			using var firstFileReader = new StreamReader(firstFilePath, Encoding.UTF8, false, Consts.Megabytes10);
+			using var secondFileReader = new StreamReader(secondFilePath, Encoding.UTF8, false, Consts.Megabytes10);
 
 			firstFileReader.ReadLine().ToLine(out var firstParsedLine);
 			secondFileReader.ReadLine().ToLine(out var secondParsedLine);
